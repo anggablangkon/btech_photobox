@@ -1,152 +1,204 @@
 <script>
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { photosStore } from "../../stores/photos.js";
   import { goto } from "$app/navigation";
 
   let video;
   let canvas;
+
+  // Session state
   let photos = [];
   let framesCount = 1;
-  let selectedFilter = "normal";
-  let countdown = 0;
-  let isTakingPhotos = false;
+  let currentFrame = 0;
+  let retakeLimit = 2;
+  let retakeCounts = [];
+  let sessionStarted = false;
 
-  const filterPresets = {
-    normal: "",
-    grayscale: "grayscale(100%)",
-    blur: "blur(5px)",
-    bright: "brightness(150%)",
-    vintage: "sepia(0.5) contrast(1.2) brightness(1.1)",
-    monochrome: "grayscale(100%) contrast(1.5)",
-    cerbright: "contrast(1.4) brightness(1.2)",
-  };
+  // Countdown timers
+  let captureCountdown = 0;
+  let autoContinueCountdown = 0;
+  let isTakingPhoto = false;
+  let autoContinueTimer;
+
+  let stream;
 
   onMount(async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
-    video.play();
+
+    await new Promise((resolve) =>
+      video.addEventListener("loadedmetadata", resolve)
+    );
+
+    await video.play();
+
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
   });
 
-  async function takePhotos() {
-    isTakingPhotos = true;
+  onDestroy(() => {
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+      stream = null;
+    }
+    clearInterval(autoContinueTimer);
+  });
 
-    while (photos.length < framesCount) photos.push(null);
-    if (photos.length > framesCount) photos = photos.slice(0, framesCount);
+  // --- SESSION FUNCTIONS ---
+  function startSession() {
+    sessionStarted = true;
+    currentFrame = 0;
+    photos = Array(framesCount).fill(null);
+    retakeCounts = Array(framesCount).fill(0);
 
-    for (let i = 0; i < framesCount; i++) {
-      if (photos[i]) continue;
+    photosStore.update((state) => ({ ...state, frameType: framesCount }));
+    takeFrame(currentFrame);
+  }
 
-      countdown = 5;
-      while (countdown > 0) {
-        await new Promise((r) => setTimeout(r, 1000));
-        countdown -= 1;
-      }
+  async function takeFrame(index) {
+    isTakingPhoto = true;
+    captureCountdown = 3;
 
-      const ctx = canvas.getContext("2d");
-      ctx.filter = filterPresets[selectedFilter] || "";
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL("image/png");
-
-      photos = photos.map((p, idx) => (idx === i ? dataUrl : p));
-      photosStore.set(photos); // **update store tiap foto**
+    while (captureCountdown > 0) {
+      await new Promise((r) => setTimeout(r, 1000));
+      captureCountdown -= 1;
     }
 
-    isTakingPhotos = false;
-    countdown = 0;
+    const ctx = canvas.getContext("2d");
+    ctx.filter = ""; // no filter
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/png");
+
+    photos[index] = dataUrl;
+
+    photosStore.update((state) => {
+      const updatedPhotos = state.photos ? [...state.photos] : [];
+      updatedPhotos[index] = dataUrl;
+      return { ...state, photos: updatedPhotos };
+    });
+
+    isTakingPhoto = false;
+    startAutoContinueTimer();
   }
 
-  function resetPhoto(index) {
-    photos = photos.map((p, i) => (i === index ? null : p));
-    photosStore.set(photos); // **update store**
+  function startAutoContinueTimer() {
+    clearInterval(autoContinueTimer);
+    autoContinueCountdown = 15;
+
+    autoContinueTimer = setInterval(() => {
+      autoContinueCountdown -= 1;
+      if (autoContinueCountdown <= 0) {
+        clearInterval(autoContinueTimer);
+        acceptPhoto();
+      }
+    }, 1000);
   }
 
-  function resetAllPhotos() {
-    photos = [];
-    photosStore.set(photos); // **update store**
+  function acceptPhoto() {
+    clearInterval(autoContinueTimer);
+    goNextFrame();
   }
 
-  function goToPreview() {
-    if (photos.filter((p) => p).length === 0) {
-      alert("Belum ada foto untuk dipreview!");
+  function retakePhoto() {
+    if (retakeLimit == 0) {
+      alert("❌ Retake limit reached for this photo!");
       return;
     }
-    photosStore.set(photos);
-    goto("/preview");
+    clearInterval(autoContinueTimer);
+    retakeLimit -= 1
+    photos[currentFrame] = null;
+    takeFrame(currentFrame);
+  }
+
+  function goNextFrame() {
+    if (currentFrame + 1 < framesCount) {
+      currentFrame += 1;
+      photos[currentFrame] = null;
+      takeFrame(currentFrame);
+    } else {
+      goto("/preview"); // All frames done
+    }
   }
 </script>
 
-<h2>🎥 Photobooth Aktif</h2>
+<!-- VIDEO / CAPTURE -->
+<div
+  class="relative w-3/4 mx-auto aspect-video bg-black rounded-lg overflow-hidden shadow-md"
+  class:hidden={sessionStarted && photos[currentFrame]}
+>
+  <video
+    bind:this={video}
+    autoplay
+    playsinline
+    muted
+    class="w-full h-full object-cover"
+  ></video>
 
-<video bind:this={video} style="filter: {filterPresets[selectedFilter] || ''}"
-></video>
-<canvas bind:this={canvas} width="400" height="300" style="display: none;"
-></canvas>
-
-<label for="filter">🎨 Pilih Filter:</label>
-<select id="filter" bind:value={selectedFilter} disabled={isTakingPhotos}>
-  {#each Object.keys(filterPresets) as key}
-    <option value={key}>{key}</option>
-  {/each}
-</select>
-
-<label for="frames">Jumlah Bingkai:</label>
-<select id="frames" bind:value={framesCount} disabled={isTakingPhotos}>
-  <option value="1">1</option>
-  <option value="2">2</option>
-  <option value="3">3</option>
-  <option value="4">4</option>
-</select>
-
-<button on:click={takePhotos} disabled={isTakingPhotos}>
-  {#if isTakingPhotos}
-    Mengambil Foto...
-  {:else}
-    📸 Ambil Foto
+  {#if isTakingPhoto && captureCountdown > 0}
+    <div
+      class="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-6xl font-bold"
+    >
+      {captureCountdown}
+    </div>
   {/if}
-</button>
+</div>
 
-{#if countdown > 0}
-  <div class="countdown">{countdown}</div>
-{/if}
+<canvas bind:this={canvas} style="display:none;"></canvas>
 
-{#if photos.length > 0}
-  <h3>🖼️ Hasil Foto ({photos.filter((p) => p).length} bingkai)</h3>
-  <button on:click={resetAllPhotos} style="margin-bottom: 1rem;"
-    >🗑️ Reset Semua Foto</button
-  >
-  <div style="display: flex; flex-wrap: wrap;">
-    {#each photos as photo, idx (idx)}
-      {#if photo}
-        <div class="photo-container">
-          <img class="photo-result" src={photo} alt={`Foto ${idx + 1}`} />
-          <button class="reset-button" on:click={() => resetPhoto(idx)}
-            >✖</button
-          >
-        </div>
-      {/if}
-    {/each}
+<!-- SESSION SETUP -->
+{#if !sessionStarted}
+  <div class="mt-6 space-y-4 w-3/4 mx-auto">
+    <div>
+      <label class="block font-medium mb-1">📑 Jumlah Bingkai:</label>
+      <select bind:value={framesCount} class="w-full p-2 border rounded-lg">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+    </div>
 
-    {#if isTakingPhotos && countdown > 0}
-      <div class="photo-container">
-        <div
-          class="photo-result"
-          style="background: #ddd; border: 2px dashed #666; display: flex; align-items: center; justify-content: center; color: #666; font-weight: bold;"
-        >
-          Foto berikutnya...
-        </div>
-      </div>
-    {/if}
+    <button
+      on:click={startSession}
+      class="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
+    >
+      ▶️ Mulai Sesi
+    </button>
   </div>
 {/if}
 
-<!-- Tambahkan tombol ke preview -->
-<button
-  on:click={goToPreview}
-  style="margin-top: 1rem; padding: 0.5rem 1rem; font-size: 1rem;"
->
-  ➡️ Lihat Preview
-</button>
+<!-- PHOTO PREVIEW AFTER CAPTURE -->
+{#if photos[currentFrame]}
+  <div class="mt-6 w-3/4 mx-auto text-center">
+    {#if autoContinueCountdown > 0}
+      <p class="text-red-600 font-bold mb-2">
+        ⏳ Auto lanjut dalam {autoContinueCountdown}s...
+      </p>
+    {/if}
 
-<style>
-  /* tetap sama */
-</style>
+    <div class="flex gap-4 justify-center mb-3">
+      <button
+        on:click={acceptPhoto}
+        class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+      >
+        ✅ Terima
+      </button>
+      <button
+        on:click={retakePhoto}
+        class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+      >
+        🔄 Retake ({retakeLimit} sisa)
+      </button>
+    </div>
+
+    <img
+      src={photos[currentFrame]}
+      alt={`Foto ${currentFrame + 1}`}
+      class="w-2/4 mx-auto my-3 rounded shadow-md"
+    />
+
+    <p class="mb-2 text-sm text-gray-600">
+      Foto {currentFrame + 1} dari {framesCount}
+    </p>
+  </div>
+{/if}
