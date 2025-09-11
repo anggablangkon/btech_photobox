@@ -4,16 +4,13 @@
   import { onMount, onDestroy } from "svelte";
   import Konva from "konva";
   import html2canvas from "html2canvas-pro";
-  import select from "daisyui/components/select/index.js";
-  import { stages } from "konva/lib/Stage";
 
-  let frameEl;
   let stage;
   let layer;
+  let selectedMenu = "filter";
   let photos = [];
   let selectedFilter = "normal";
-  let widthFrame = 0;
-  let heightFrame = 0;
+  
   const filterPresets = {
     normal: "",
     grayscale: "grayscale(100%)",
@@ -66,15 +63,18 @@
 
   onMount(() => {
     unsubscribe = photosStore.subscribe((v) => {
-      selectedFrameType = v.frameType || 0;
+      selectedFrameType = v.frameType || 1;
       photos = v.photos || [];
     });
 
-    stage = new Konva.stages({
-      container: "frame",
-      width: frameBg[selectedFilter].width,
-      height: frameBg[selectedFilter].height,
+    stage = new Konva.Stage({
+      container: "frame-sticker",
+      width: frameBg[selectedFrameType].width,
+      height: frameBg[selectedFrameType].height,
     });
+    layer = new Konva.Layer();
+    stage.add(layer);
+
   });
 
   onDestroy(() => {
@@ -83,11 +83,13 @@
 
   // --- Stickers ---
   function addSticker(content) {
+    console.log(stage);
     const simpleText = new Konva.Text({
       x: stage.width() / 2,
       y: 15,
       text: content,
       fontSize: 48,
+      draggable: true,
     });
 
     layer.add(simpleText);
@@ -118,11 +120,48 @@
 
   // ... your existing code ...
 
-  function downloadImage() {
+  async function downloadImage() {
+    const photoContainers = document.querySelectorAll(
+      ".frame div.absolute img"
+    );
+
+    // Replace images with canvas
+    await Promise.all(
+      Array.from(photoContainers).map((img) => {
+        return new Promise((resolve) => {
+          const filter = img.style.filter || "";
+          if (!filter) return resolve();
+
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          const imageObj = new Image();
+          imageObj.src = img.src;
+          imageObj.onload = () => {
+            canvas.width = img.width; // match displayed size
+            canvas.height = img.height;
+
+            // Apply filter
+            ctx.filter = filter;
+            ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height);
+
+            // Replace image with canvas in DOM
+            img.parentNode.replaceChild(canvas, img);
+
+            resolve();
+          };
+        });
+      })
+    );
+
+    // Now capture the frame
     const node = document.querySelector(".frame");
 
     html2canvas(node, {
-      scale: 2, // higher resolution
+      useCORS: true,
+      allowTaint: false,
+      imageTimeout: 3000,
+      scale: 2,
     }).then((canvas) => {
       const link = document.createElement("a");
       link.href = canvas.toDataURL("image/png");
@@ -130,10 +169,14 @@
       link.click();
     });
   }
+
+  function finishSessionFilter() {
+    selectedMenu = "sticker";
+  }
 </script>
 
 <!-- FRAME -->
-<div class="inline-flex ms-auto gap-2 w-full">
+<div class="inline-flex ms-auto gap-2 w-full s">
   <!-- Action Buttons -->
   <button on:click={finishSession} class="btn btn-success"> ✅ Selesai </button>
 
@@ -175,27 +218,29 @@
           </div>
         {/if}
       {/each}
+      <div id="frame-sticker" class="z-20 absolute"></div>
     </div>
   </div>
 
-  <!-- name of each tab group should be unique -->
   <div class="tabs tabs-border xl:w-1/2">
+    <!-- FILTER TAB -->
     <input
       type="radio"
       name="menuPreview"
       class="tab"
       aria-label="Filter"
-      checked="checked"
+      bind:group={selectedMenu}
+      value="filter"
+      disabled={selectedMenu != "filter"}
     />
     <div class="tab-content bg-base-100 p-2">
       <div
         class="w-full flex xl:flex-wrap overflow-x-auto xl:overflow-y-auto gap-12 py-2 max-h-[500px]"
       >
-        <!-- Filter -->
         {#each Object.entries(filterPresets) as [filterName, filterValue]}
           <div
             class="card shrink xl:shrink-1 w-40 bg-base-100 shadow-sm text-center cursor-pointer hover:shadow-md
-            {selectedFilter === filterName ? 'border-2 border-primary' : ''}"
+          {selectedFilter === filterName ? 'border-2 border-primary' : ''}"
             on:click={() => (selectedFilter = filterName)}
           >
             <figure class="w-full h-40 overflow-hidden">
@@ -203,7 +248,7 @@
                 src="https://img.daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.webp"
                 alt={filterName}
                 class="object-cover w-full h-full"
-                style="filter: {filterValue};"
+                style={`filter:${filterValue}`}
               />
             </figure>
             <div class="card-body p-2">
@@ -212,12 +257,23 @@
           </div>
         {/each}
       </div>
+      <button on:click={finishSessionFilter} class="btn btn-primary">
+        Finish
+      </button>
     </div>
 
-    <input type="radio" name="menuPreview" class="tab" aria-label="Stiker" />
+    <!-- STICKER TAB -->
+    <input
+      type="radio"
+      name="menuPreview"
+      class="tab"
+      aria-label="Sticker"
+      bind:group={selectedMenu}
+      value="sticker"
+      disabled={selectedMenu != "sticker"}
+    />
     <div class="tab-content bg-base-100 p-10">
       <div class="w-full flex flex-col gap-6 overflow-y-auto">
-        <!-- CONTROLS -->
         <div class="form-control">
           <label class="label">
             <span class="label-text font-medium">✨ Tambah Stiker:</span>
@@ -235,8 +291,5 @@
         </div>
       </div>
     </div>
-
-    <input type="radio" name="menuPreview" class="tab" aria-label="Tab 3" />
-    <div class="tab-content bg-base-100 p-10">Tab content 3</div>
   </div>
 </div>
