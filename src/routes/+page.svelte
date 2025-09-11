@@ -8,7 +8,7 @@
 	}
 </script>
 
-<div class="flex items-center justify-center">
+<div class="flex items-center justify-center w-full">
 	<div class="flex flex-col items-center text-center p-6">
 		<h1 class="text-3xl font-bold mb-4">📸 Selamat Datang di Photobooth!</h1>
 		<p class="text-lg mb-8">Pilih mode penggunaan:</p>

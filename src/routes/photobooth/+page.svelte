@@ -1,15 +1,23 @@
 <script>
   import { onMount, onDestroy } from "svelte";
-  import { photosStore } from "../../stores/photos.js";
+  import {
+    photosStore,
+    photoFrame as photoFrames,
+    photoOptions,
+  } from "../../stores/photos.js";
   import { goto } from "$app/navigation";
+  import select from "daisyui/components/select/index.js";
 
-  let video;
+  let videos = [];
   let canvas;
 
   // Session state
   let photos = [];
+  let video;
+  let frameLayout;
   let framesCount = 1;
   let currentFrame = 0;
+  let selectedFrame = null;
   let retakeLimit = 2;
   let retakeCounts = [];
   let sessionStarted = false;
@@ -19,21 +27,17 @@
   let autoContinueCountdown = 0;
   let isTakingPhoto = false;
   let autoContinueTimer;
-
+  let frames = [];
   let stream;
 
   onMount(async () => {
-    stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject = stream;
+    photoFrames.subscribe((v) => {
+      frames = v;
+    });
 
-    await new Promise((resolve) =>
-      video.addEventListener("loadedmetadata", resolve)
-    );
-
-    await video.play();
-
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    photoOptions.subscribe((v) => {
+      frameLayout = v;
+    });
   });
 
   onDestroy(() => {
@@ -45,13 +49,24 @@
   });
 
   // --- SESSION FUNCTIONS ---
-  function startSession() {
+  async function startSession() {
+    const frame = frames[selectedFrame];
     sessionStarted = true;
     currentFrame = 0;
     photos = Array(framesCount).fill(null);
     retakeCounts = Array(framesCount).fill(0);
+    framesCount = frame.count;
+    photosStore.update((state) => ({ ...state, frameType: selectedFrame }));
 
-    photosStore.update((state) => ({ ...state, frameType: framesCount }));
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+
+    if (video) {
+      video.srcObject = stream;
+      video.play();
+
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+    }
     takeFrame(currentFrame);
   }
 
@@ -105,12 +120,13 @@
       return;
     }
     clearInterval(autoContinueTimer);
-    retakeLimit -= 1
+    retakeLimit -= 1;
     photos[currentFrame] = null;
     takeFrame(currentFrame);
   }
 
   function goNextFrame() {
+    console.log(currentFrame, framesCount, selectedFrame);
     if (currentFrame + 1 < framesCount) {
       currentFrame += 1;
       photos[currentFrame] = null;
@@ -122,54 +138,67 @@
 </script>
 
 <!-- VIDEO / CAPTURE -->
-<div
-  class="relative w-3/4 mx-auto aspect-video bg-black rounded-lg overflow-hidden shadow-md"
-  class:hidden={sessionStarted && photos[currentFrame]}
->
-  <video
-    bind:this={video}
-    autoplay
-    playsinline
-    muted
-    class="w-full h-full object-cover"
-  ></video>
-
-  {#if isTakingPhoto && captureCountdown > 0}
-    <div
-      class="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-6xl font-bold"
-    >
-      {captureCountdown}
-    </div>
-  {/if}
-</div>
-
-<canvas bind:this={canvas} style="display:none;"></canvas>
 
 <!-- SESSION SETUP -->
 {#if !sessionStarted}
-  <div class="mt-6 space-y-4 w-3/4 mx-auto">
-    <div>
-      <label class="block font-medium mb-1">📑 Jumlah Bingkai:</label>
-      <select bind:value={framesCount} class="w-full p-2 border rounded-lg">
-        <option value="1">1</option>
-        <option value="2">2</option>
-        <option value="3">3</option>
-        <option value="4">4</option>
-      </select>
+  <div class="mt-6 space-y-4 w-3/4 mx-auto flex flex-col">
+    <div
+      class="card shadow py-2 flex flex-row overflow-x-auto gap-2 px-2 h-full bg-gray-100 shadow"
+    >
+      {#each Object.entries(frames) as [i, frame]}
+        <div
+          class="card flex-shrink-0 xl:flex-shrink-1 w-40 h-40 bg-base-100 shadow-sm text-center cursor-pointer hover:shadow-md p-2
+          {selectedFrame === i ? 'border-2 border-primary' : ''}"
+          on:click={() => {
+            selectedFrame = i;
+          }}
+        >
+          <figure class="h-full overflow-hidden">
+            <img
+              src={frame.src}
+              alt={frame.src}
+              class="object-contain w-full h-full"
+            />
+          </figure>
+        </div>
+      {/each}
     </div>
 
     <button
       on:click={startSession}
-      class="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
+      class="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition mt-auto"
     >
       ▶️ Mulai Sesi
     </button>
   </div>
+{:else}
+  <div
+    class="relative mx-auto aspect-video rounded-lg overflow-hidden relative w-[1080px] h-[720px]"
+    class:hidden={sessionStarted && photos[currentFrame]}
+  >
+    <video
+      bind:this={video}
+      autoplay
+      playsinline
+      muted
+      class="w-full h-full object-cover"
+    ></video>
+
+    {#if isTakingPhoto && captureCountdown > 0}
+      <div
+        class="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-6xl font-bold"
+      >
+        {captureCountdown}
+      </div>
+    {/if}
+  </div>
+
+  <canvas bind:this={canvas} style="display:none;"></canvas>
 {/if}
 
 <!-- PHOTO PREVIEW AFTER CAPTURE -->
 {#if photos[currentFrame]}
-  <div class="mt-6 w-3/4 mx-auto text-center">
+  <div class="mt-6 w-[720px] h-[480px] mx-auto text-center">
     {#if autoContinueCountdown > 0}
       <p class="text-red-600 font-bold mb-2">
         ⏳ Auto lanjut dalam {autoContinueCountdown}s...
@@ -194,7 +223,7 @@
     <img
       src={photos[currentFrame]}
       alt={`Foto ${currentFrame + 1}`}
-      class="w-2/4 mx-auto my-3 rounded shadow-md"
+      class="mx-auto my-3 rounded shadow-md object-cover w-full"
     />
 
     <p class="mb-2 text-sm text-gray-600">

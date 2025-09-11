@@ -15,7 +15,7 @@
     class="flex flex-col w-full max-w-12xl mx-auto p-6 bg-white shadow-lg mt-16 min-h-[calc(100vh-6rem)]"
   >
     <!-- Scrollable content -->
-    <div class="flex-grow flex overflow-y-auto w-full h-full flex-col">
+    <div class="flex-grow flex overflow-y-auto w-full h-full">
       <slot />
     </div>
 
