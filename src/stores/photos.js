@@ -4,6 +4,7 @@ export const photosStore = writable({
   photos: [], // array of frames, each frame can have 1-4 photos
   frameType: 0, // selected frame layout index
   photoCount: 0,
+  photoType: {},
 });
 
 export const photoFrame = readable({
@@ -31,9 +32,15 @@ export const photoFrame = readable({
     width: 400,
     height: 600,
   },
+  5: {
+    src: "/frame/Styling 1.png",
+    count: 4,
+    width: 400,
+    height: 600,
+  },
 });
 
-export const photoOptions = readable({
+export const photoOptions = writable({
   1: [
     { image: 1, x: 10, y: 10, w: 181, h: 110 },
     { image: 2, x: 10, y: 135, w: 181, h: 110 },
@@ -56,4 +63,36 @@ export const photoOptions = readable({
     { image: 1, x: 26, y: 205, w: 215, h: 153 },
     { image: 2, x: 339, y: 205, w: 215, h: 153 },
   ],
+  5: [
+    { image: 1, x: 34, y: 22, w: 159, h: 201 },
+    { image: 2, x: 207, y: 22, w: 159, h: 201 },
+    { image: 1, x: 207, y: 237, w: 159, h: 201 },
+    { image: 2, x: 34, y: 237, w: 159, h: 201 },
+  ],
 });
+
+export const ipOptions = writable({
+  1: {
+    name: "Sheila On 7",
+  },
+  2: {
+    name: "Sheila On 7",
+  },
+  3: {
+    name: "Sheila On 7",
+  },
+  4: {
+    name: "Sheila On 7",
+  },
+  5: {
+    name: "Sheila On 7",
+  },
+});
+
+export function resetPhotoStore() {
+  photosStore.set({
+    photos: [], // array of frames, each frame can have 1-4 photos
+    frameType: 0, // selected frame layout index
+    photoCount: 0,
+  });
+}

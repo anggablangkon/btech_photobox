@@ -31,13 +31,11 @@
   let stream;
 
   onMount(async () => {
-    photoFrames.subscribe((v) => {
-      frames = v;
-    });
-
     photoOptions.subscribe((v) => {
       frameLayout = v;
     });
+
+    startSession();
   });
 
   onDestroy(() => {
@@ -55,7 +53,7 @@
     currentFrame = 0;
     photos = Array(framesCount).fill(null);
     retakeCounts = Array(framesCount).fill(0);
-    framesCount = frame.count;
+    framesCount = 4;
     photosStore.update((state) => ({ ...state, frameType: selectedFrame }));
 
     stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -143,11 +141,11 @@
 {#if !sessionStarted}
   <div class="mt-6 space-y-4 w-3/4 mx-auto flex flex-col">
     <div
-      class="card shadow py-2 flex flex-row overflow-x-auto gap-2 px-2 h-full bg-gray-100 shadow"
+      class="card shadow py-2 flex flex-row overflow-x-auto gap-2 px-2 h-full bg-base-200 shadow"
     >
       {#each Object.entries(frames) as [i, frame]}
         <div
-          class="card flex-shrink-0 xl:flex-shrink-1 w-40 h-40 bg-base-100 shadow-sm text-center cursor-pointer hover:shadow-md p-2
+          class="card flex-shrink-0 xl:flex-shrink-1 w-40 h-40 bg-base-100/40 shadow-sm text-center cursor-pointer hover:shadow-md p-2
           {selectedFrame === i ? 'border-2 border-primary' : ''}"
           on:click={() => {
             selectedFrame = i;
@@ -166,7 +164,7 @@
 
     <button
       on:click={startSession}
-      class="w-full py-3 rounded-lg bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition mt-auto"
+      class="w-full py-3 rounded-lg text-white font-semibold shadow transition mt-auto"
     >
       ▶️ Mulai Sesi
     </button>

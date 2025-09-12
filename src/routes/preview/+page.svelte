@@ -33,7 +33,7 @@
 
   onMount(() => {
     unsubscribe = photosStore.subscribe((v) => {
-      selectedFrameType = v.frameType || 2;
+      selectedFrameType = v.frameType || 5;
       photos = v.photos || [];
     });
     photoFrame.subscribe((v) => {
@@ -72,40 +72,10 @@
     });
   }
 
-  // --- Stickers ---
-  function addSticker(content) {
-    const simpleText = new Konva.Text({
-      x: stage.width() / 2,
-      y: 15,
-      text: content,
-      fontSize: 48,
-      draggable: true,
-    });
-
-    layer.add(simpleText);
-  }
-
-  function updateSticker(idx, key, value) {
-    stickers[idx] = { ...stickers[idx], [key]: value };
-    stickers = [...stickers];
-  }
-
-  function toggleFlip(idx) {
-    stickers[idx] = { ...stickers[idx], flipped: !stickers[idx].flipped };
-    stickers = [...stickers];
-  }
-  function removeSticker(idx) {
-    stickers = stickers.filter((_, i) => i !== idx);
-  }
-
   function finishSession() {
     alert("✅ Frame selesai!");
     photosStore.set([]);
     goto("/");
-  }
-
-  function deselectSticker(e) {
-    if (e.target.closest(".sticker")) return;
   }
 
   // ... your existing code ...
@@ -133,8 +103,6 @@
       ".frame div.absolute img"
     );
 
-    console.log(photoContainers);
-
     // Replace images with canvas
     await Promise.all(
       Array.from(photoContainers).map((img) => {
@@ -148,12 +116,31 @@
           const imageObj = new Image();
           imageObj.src = img.src;
           imageObj.onload = () => {
-            canvas.width = img.width; // match displayed size
-            canvas.height = img.height;
+            // Use the displayed size of the img
+            const displayWidth = img.offsetWidth;
+            const displayHeight = img.offsetHeight;
+
+            canvas.width = displayWidth;
+            canvas.height = displayHeight;
 
             // Apply filter
             ctx.filter = filter;
-            ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height);
+
+            // === Object-fit: cover emulation ===
+            const iw = imageObj.width;
+            const ih = imageObj.height;
+            const cw = canvas.width;
+            const ch = canvas.height;
+
+            const scale = Math.max(cw / iw, ch / ih);
+            const sw = iw * scale;
+            const sh = ih * scale;
+
+            const dx = (cw - sw) / 2;
+            const dy = (ch - sh) / 2;
+
+            ctx.filter = filter;
+            ctx.drawImage(imageObj, dx, dy, sw, sh);
 
             // Replace image with canvas in DOM
             if (!img.parentNode) {
@@ -185,10 +172,10 @@
     </button>
   </div>
 
-  <div class="flex flex-col xl:flex-row gap-6 p-6 overflow-hidden">
+  <div class="flex gap-6 p-6 flex-wrap">
     {#if frame}
       <div
-        class="flex justify-center md:items-center overflow-hidden w-full h-full"
+        class="flex justify-center md:items-center overflow-hidden w-[400px] h-[600px] flex-shrink-0"
       >
         <div
           id="frame"
@@ -232,25 +219,14 @@
       </div>
     {/if}
 
-    <div class="tabs tabs-border xl:w-1/2">
-      <!-- FILTER TAB -->
-      <input
-        type="radio"
-        name="menuPreview"
-        class="tab"
-        aria-label="Filter"
-        bind:group={selectedMenu}
-        value="filter"
-        disabled={selectedMenu != "filter"}
-      />
-      <div class="tab-content bg-base-100 p-2">
-        <div
-          class="w-full flex xl:flex-wrap overflow-x-auto xl:overflow-y-auto gap-12 py-2 max-h-[500px]"
-        >
+    <div class="flex-1 flex flex-col gap-3 overflow-hidden">
+      <div class="py-3 px-2 shadow-md rounded-md bg-base-200">
+        <h5 class="font-bold mb-2">Filter</h5>
+        <div class="flex overflow-x-auto gap-2 py-2 max-h-[500px]">
           {#each Object.entries(filterPresets) as [filterName, filterValue]}
             <div
-              class="card flex-shrink-0 xl:flex-shrink-1 w-40 bg-base-100 shadow-sm text-center cursor-pointer hover:shadow-md
-          {selectedFilter === filterName ? 'border-2 border-primary' : ''}"
+              class="card w-40 h-40 flex-shrink-0
+            {selectedFilter === filterName ? 'border-2 border-primary' : ''}"
               on:click={() => (selectedFilter = filterName)}
             >
               <figure class="w-full h-40 overflow-hidden">
@@ -267,38 +243,27 @@
             </div>
           {/each}
         </div>
-        <button on:click={finishSessionFilter} class="btn btn-primary">
-          Finish
-        </button>
       </div>
-
-      <!-- STICKER TAB -->
-      <input
-        type="radio"
-        name="menuPreview"
-        class="tab"
-        aria-label="Sticker"
-        bind:group={selectedMenu}
-        value="sticker"
-        disabled={selectedMenu != "sticker"}
-      />
-      <div class="tab-content bg-base-100 p-10">
-        <div class="w-full flex flex-col gap-6 overflow-y-auto">
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text font-medium">✨ Tambah Stiker:</span>
-            </label>
-            <div class="flex gap-2 flex-wrap">
-              {#each availableStickers as st}
-                <button
-                  class="btn btn-sm btn-outline"
-                  on:click={() => addSticker(st)}
-                >
-                  {st}
-                </button>
-              {/each}
+      <div class="flex-1 py-3 px-2 shadow-md rounded-md bg-base-200">
+        <h5 class="font-bold mb-2">Filter</h5>
+        <div class="flex overflow-x-auto gap-2 py-2 h-11/12 w-full">
+          {#each Object.entries(filterPresets) as [filterName, filterValue]}
+            <div
+              class="card p-2 flex-shrink-0 w-40
+            {selectedFilter === filterName ? 'border-2 border-primary' : ''}"
+              on:click={() => (selectedFilter = filterName)}
+            >
+              <img
+                src="/frame/Styling 1.png"
+                alt="/frame/Styling 1.png"
+                class="object-cover w-full"
+                style={`filter:${filterValue}`}
+              />
+              <div class="card-body p-2">
+                <h2 class="card-title text-sm">{filterName}</h2>
+              </div>
             </div>
-          </div>
+          {/each}
         </div>
       </div>
     </div>
