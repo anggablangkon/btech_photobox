@@ -13,13 +13,13 @@
   });
 </script>
 
-<div class="w-full h-full overflow-hidden">
+<div class="w-full block pb-15">
   <h1 class="mb-3 font-bold text-xl text-center">Pilih Frame</h1>
   <div
-    class="w-full grid grid-cols-2 gap-4 h-full bg-base-200/50 py-4 px-2 rounded-md overflow-hidden"
+    class="h-full mx-auto flex flex-wrap justify-center gap-2 rounded-md p-1 overflow-auto"
   >
     <div
-      class="h-[600px] shadow-lg border border-1 border-base-300"
+      class="w-1/3 h-3/4 shadow-lg border border-1 border-base-300"
       on:click={goto("/photobooth")}
     >
       <figure class="h-full p-2 border-base-200 shadow overflow-hidden">
@@ -31,7 +31,7 @@
       </figure>
     </div>
     <div
-      class="h-[600px] shadow-lg border border-1 border-base-300"
+      class="w-1/3 h-3/4 shadow-lg border border-1 border-base-300"
       on:click={goto("/photobooth")}
     >
       <figure class="h-full p-2 border-base-200 shadow overflow-hidden">

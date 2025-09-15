@@ -61,7 +61,7 @@
     {/if}
     <swiper-container
       bind:this={swiperEl}
-      class="w-3/4"
+      class="w-3/4 h-full"
       slides-per-view="2"
       space-between={10}
       navigation="true"
@@ -69,14 +69,14 @@
       {#each photoTypes as photoType, i}
         <swiper-slide>
           <div
-            class="w-full flex flex-col shrink items-center border-4 bg-blue-50 shadow-md mx-auto text-center
+            class="w-4/6 flex flex-col shrink items-center border-4 bg-blue-50 shadow-md mx-auto text-center
         {selectedType && selectedType.id == photoType.id
               ? 'border-blue-400'
               : 'border-blue-100'}"
             on:click={goPaymentPage(photoType)}
           >
             <h1 class="mb-3 font-bold text-xl mt-3">Standard</h1>
-            <div class=" w-5/6 bg-blue-200 items-center">
+            <div class="w-5/6 bg-blue-200 items-center">
               <img src={photoType.img} alt="" class="h-[400px] mx-auto" />
             </div>
             <p class="mt-1 text-white-500 w-5/6 text-sm">

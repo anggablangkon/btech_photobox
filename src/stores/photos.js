@@ -4,6 +4,7 @@ export const photosStore = writable({
   photos: [], // array of frames, each frame can have 1-4 photos
   frameType: 0, // selected frame layout index
   photoCount: 0,
+  photoIp: null,
   photoType: {},
 });
 
@@ -64,10 +65,10 @@ export const photoOptions = writable({
     { image: 2, x: 339, y: 205, w: 215, h: 153 },
   ],
   5: [
-    { image: 1, x: 34, y: 22, w: 159, h: 201 },
-    { image: 2, x: 207, y: 22, w: 159, h: 201 },
-    { image: 1, x: 207, y: 237, w: 159, h: 201 },
-    { image: 2, x: 34, y: 237, w: 159, h: 201 },
+    { image: 1, x: 32, y: 22, w: 164, h: 210 },
+    { image: 2, x: 205, y: 22, w: 164, h: 210 },
+    { image: 1, x: 205, y: 237, w: 164, h: 210 },
+    { image: 2, x: 32, y: 237, w: 164, h: 210 },
   ],
 });
 

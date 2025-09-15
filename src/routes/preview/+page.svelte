@@ -28,7 +28,6 @@
   };
 
   let selectedFrameType = 1;
-  const availableStickers = ["😎", "🎉", "❤️", "✨", "😂", "🌸", "👑"];
   let unsubscribe;
 
   onMount(() => {
@@ -44,33 +43,6 @@
       frameOption = v[selectedFrameType];
     });
   });
-
-  $: if (frame) {
-    stage = new Konva.Stage({
-      container: "frame-sticker",
-      width: frame.width,
-      height: frame.height,
-    });
-    layer = new Konva.Layer();
-    stage.add(layer);
-
-    tr = new Konva.Transformer({
-      centeredScaling: true,
-    });
-    layer.add(tr);
-
-    // clicks should select/deselect shapes
-    stage.on("click tap", function (e) {
-      // if we are selecting with rect, do nothing
-      // if click on empty area - remove all selections
-      if (e.target === stage) {
-        tr.nodes([]);
-        return;
-      }
-
-      tr.nodes([e.target]);
-    });
-  }
 
   function finishSession() {
     alert("✅ Frame selesai!");
@@ -159,9 +131,9 @@
   }
 </script>
 
-<div class="content">
+<div class="content h-[80vh] w-full">
   <!-- FRAME -->
-  <div class="inline-flex ms-auto gap-2 w-full s">
+  <div class="inline-flex ms-auto gap-2 w-full">
     <!-- Action Buttons -->
     <button on:click={finishSession} class="btn btn-success">
       ✅ Selesai
@@ -172,64 +144,72 @@
     </button>
   </div>
 
-  <div class="flex gap-6 p-6 flex-wrap">
+  <div class="flex gap-6 p-6 flex-wrap max-h-full">
     {#if frame}
       <div
-        class="flex justify-center md:items-center overflow-hidden w-[400px] h-[600px] flex-shrink-0"
+        class="flex justify-center md:items-center overflow-hidden flex-shrink-0 w-1/3 rounded-4xl my-auto"
       >
-        <div
-          id="frame"
-          class="frame relative shadow-lg overflow-hidden object-contain"
-          style="height:{frame.height}px;width:{frame.width}px;"
-          on:click={deselectSticker}
-        >
-          <img src={frame.src} class="absolute z-10 h-full" alt="" srcset="" />
-          {#each frameOption || [] as t, i}
-            {#if photos[t.image - 1]}
-              <div
-                class="absolute overflow-hidden shadow flex items-center justify-center {t.image}"
-                style="left:{t.x}px; top:{t.y}px; width:{t.w}px; height:{t.h}px;"
-              >
-                <img
-                  src={photos[t.image - 1] || ""}
-                  alt={`Foto ${i}`}
-                  class="h-full w-full object-cover"
-                  crossorigin="anonymous"
-                  style="filter:{filterPresets[selectedFilter] || ''}; "
-                />
-              </div>
-            {:else}
-              <div
-                class="absolute overflow-hidden shadow flex items-center justify-center {t.image}"
-                style="left:{t.x}px; top:{t.y}px; width:{t.w}px; height:{t.h}px;"
-              >
-                <img
-                  src={photos[t.image - 1] ||
-                    "photo-1606107557195-0e29a4b5b4aa.webp"}
-                  alt={`Foto ${i}`}
-                  class="h-full w-full object-cover"
-                  crossorigin="anonymous"
-                  style="filter:{filterPresets[selectedFilter] || ''}; "
-                />
-              </div>
-            {/if}
-          {/each}
-          <div id="frame-sticker" class="z-20 absolute"></div>
+        <div class="p-10 bg-emerald-400 rounded-2xl">
+          <div
+            id="frame"
+            class="frame relative shadow-lg overflow-hidden object-contain"
+            style="height:{frame.height}px;width:{frame.width}px;"
+            on:click={deselectSticker}
+          >
+            <img
+              src={frame.src}
+              class="absolute z-10 h-full"
+              alt=""
+              srcset=""
+            />
+            {#each frameOption || [] as t, i}
+              {#if photos[t.image - 1]}
+                <div
+                  class="absolute overflow-hidden shadow flex items-center justify-center {t.image}"
+                  style="left:{t.x}px; top:{t.y}px; width:{t.w}px; height:{t.h}px;"
+                >
+                  <img
+                    src={photos[t.image - 1] || ""}
+                    alt={`Foto ${i}`}
+                    class="h-full w-full object-cover"
+                    crossorigin="anonymous"
+                    style="filter:{filterPresets[selectedFilter] || ''}; "
+                  />
+                </div>
+              {:else}
+                <div
+                  class="absolute overflow-hidden shadow flex items-center justify-center {t.image}"
+                  style="left:{t.x}px; top:{t.y}px; width:{t.w}px; height:{t.h}px;"
+                >
+                  <img
+                    src={photos[t.image - 1] ||
+                      "photo-1606107557195-0e29a4b5b4aa.webp"}
+                    alt={`Foto ${i}`}
+                    class="h-full w-full object-cover"
+                    crossorigin="anonymous"
+                    style="filter:{filterPresets[selectedFilter] || ''}; "
+                  />
+                </div>
+              {/if}
+            {/each}
+            <div id="frame-sticker" class="z-20 absolute"></div>
+          </div>
         </div>
       </div>
     {/if}
 
-    <div class="flex-1 flex flex-col gap-3 overflow-hidden">
-      <div class="py-3 px-2 shadow-md rounded-md bg-base-200">
-        <h5 class="font-bold mb-2">Filter</h5>
-        <div class="flex overflow-x-auto gap-2 py-2 max-h-[500px]">
+    <div class="h-[75vh] flex-1 flex flex-col overflow-hidden gap-2 w-full">
+      <div class="py-3 px-2 shadow-md rounded-md bg-base-200 h-3/8">
+        <h5 class="font-bold mb-2 h-1/8">Filter</h5>
+        <div class="flex gap-2 overflow-x-auto h-7/8">
           {#each Object.entries(filterPresets) as [filterName, filterValue]}
             <div
-              class="card w-40 h-40 flex-shrink-0
-            {selectedFilter === filterName ? 'border-2 border-primary' : ''}"
+              class={`card w-[180px] h-[180px] flex-shrink-0 cursor-pointer ${
+                selectedFilter === filterName ? "border-2 border-primary" : ""
+              }`}
               on:click={() => (selectedFilter = filterName)}
             >
-              <figure class="w-full h-40 overflow-hidden">
+              <figure class="w-full h-full overflow-hidden">
                 <img
                   src="https://img.daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.webp"
                   alt={filterName}
@@ -244,19 +224,20 @@
           {/each}
         </div>
       </div>
-      <div class="flex-1 py-3 px-2 shadow-md rounded-md bg-base-200">
-        <h5 class="font-bold mb-2">Filter</h5>
-        <div class="flex overflow-x-auto gap-2 py-2 h-11/12 w-full">
+
+      <div class="flex-1 py-3 px-2 shadow-md rounded-md bg-base-200 h-3/8">
+        <h5 class="font-bold mb-2 h-1/10">Frame Background</h5>
+        <div class="flex overflow-x-auto gap-2 py-2 w-full h-9/10">
           {#each Object.entries(filterPresets) as [filterName, filterValue]}
             <div
-              class="card p-2 flex-shrink-0 w-40
+              class="card p-2 flex-shrink-0 h-full
             {selectedFilter === filterName ? 'border-2 border-primary' : ''}"
               on:click={() => (selectedFilter = filterName)}
             >
               <img
                 src="/frame/Styling 1.png"
                 alt="/frame/Styling 1.png"
-                class="object-cover w-full"
+                class="object-cover w-full h-11/12"
                 style={`filter:${filterValue}`}
               />
               <div class="card-body p-2">

@@ -22,18 +22,18 @@
   }
 </script>
 
-<div class="w-full items-center justify-center h-full">
+<div class="mx-auto w-5/6 h-5/6 my-auto items-center justify-center">
   <h1 class="mb-3 font-bold text-xl text-center">Ringkasan Pembayaran</h1>
 
   {#if photoType && Object.keys(photoType).length > 0}
-    <div class="w-full grid grid-cols-2 justify-center relative mx-auto">
-      <div class="p-2">
+    <div class="w-full h-full flex justify-center relative mx-auto">
+      <div class="p-2 w-1/2">
         <div
-          class="w-3/4 p-2 bg-base-300/25 shadow-md mx-auto text-center my-3"
+          class="w-3/4 h-3/4 p-2 bg-base-300/25 shadow-md mx-auto text-center my-3"
         >
           <h1 class="mb-3 font-bold text-xl mt-3">{photoType.title}</h1>
-          <div class=" w-5/6 bg-base-300 items-center mx-auto">
-            <img src={photoType.img} alt="" class="h-[400px] mx-auto" />
+          <div class=" w-5/6 h-5/6 bg-base-300 items-center mx-auto">
+            <img src={photoType.img} alt="" class="h-full mx-auto" />
           </div>
           <p class="mt-3 text-white-500 w-5/6 text-sm text-center mx-auto">
             {photoType.description}
@@ -44,8 +44,8 @@
         </div>
         <p class="text-center">Pastikan Anda sudah siap setelah membayar</p>
       </div>
-      <div class="p-2">
-        <div class="flex flex-grow flex-col mx-auto h-full p-3">
+      <div class="p-2 w-1/2">
+        <div class="flex flex-grow flex-col mx-auto w-3/4 h-3/4 p-3">
           <div class="mx-auto my-auto h-5/6 min-w-100 border"></div>
           <div class="grid grid-cols-2 gap-3 mt-auto w-full">
             <button
@@ -54,7 +54,7 @@
             >
             <button
               class="p-2 bg-primary rounded-md text-white"
-              on:click={() => goto("/frame")}>Saya Sudah Membayar</button
+              on:click={() => goto("/ip")}>Saya Sudah Membayar</button
             >
           </div>
         </div>
