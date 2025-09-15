@@ -28,12 +28,6 @@ export const photoFrame = readable({
     height: 600,
   },
   4: {
-    src: "/frame/frame2.png",
-    count: 4,
-    width: 400,
-    height: 600,
-  },
-  5: {
     src: "/frame/Styling 1.png",
     count: 4,
     width: 400,
@@ -59,12 +53,6 @@ export const photoOptions = writable({
     { image: 4, x: 22, y: 405, w: 157, h: 113 },
   ],
   4: [
-    { image: 1, x: 26, y: 16, w: 215, h: 153 },
-    { image: 2, x: 339, y: 16, w: 215, h: 153 },
-    { image: 1, x: 26, y: 205, w: 215, h: 153 },
-    { image: 2, x: 339, y: 205, w: 215, h: 153 },
-  ],
-  5: [
     { image: 1, x: 32, y: 22, w: 164, h: 210 },
     { image: 2, x: 205, y: 22, w: 164, h: 210 },
     { image: 3, x: 32, y: 237, w: 164, h: 210 },

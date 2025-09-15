@@ -280,7 +280,7 @@
         </div>
       </div>
 
-      <div class="flex-1 py-3 px-2 shadow-md rounded-md bg-base-200 h-3/8">
+      <!-- <div class="flex-1 py-3 px-2 shadow-md rounded-md bg-base-200 h-3/8">
         <h5 class="font-bold mb-2 h-1/10">Frame Background</h5>
         <div class="flex overflow-x-auto gap-2 py-2 w-full h-9/10">
           {#each Object.entries(filterPresets) as [filterName, filterValue]}
@@ -303,7 +303,7 @@
             </div>
           {/each}
         </div>
-      </div>
+      </div> -->
     </div>
   </div>
 </div>
