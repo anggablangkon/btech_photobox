@@ -67,8 +67,8 @@ export const photoOptions = writable({
   5: [
     { image: 1, x: 32, y: 22, w: 164, h: 210 },
     { image: 2, x: 205, y: 22, w: 164, h: 210 },
-    { image: 1, x: 205, y: 237, w: 164, h: 210 },
-    { image: 2, x: 32, y: 237, w: 164, h: 210 },
+    { image: 3, x: 32, y: 237, w: 164, h: 210 },
+    { image: 4, x: 205, y: 237, w: 164, h: 210 },
   ],
 });
 

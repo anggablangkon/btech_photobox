@@ -17,6 +17,7 @@
   let frameOption;
   let selectedMenu = "filter";
   let selectedFilter = "normal";
+  let selectedFrameFilter = "normal";
 
   const filterPresets = {
     normal: "",
@@ -159,8 +160,7 @@
             <img
               src={frame.src}
               class="absolute z-10 h-full"
-              alt=""
-              srcset=""
+              style="filter:{filterPresets[selectedFrameFilter] || ''}; "
             />
             {#each frameOption || [] as t, i}
               {#if photos[t.image - 1]}
@@ -231,8 +231,10 @@
           {#each Object.entries(filterPresets) as [filterName, filterValue]}
             <div
               class="card p-2 flex-shrink-0 h-full
-            {selectedFilter === filterName ? 'border-2 border-primary' : ''}"
-              on:click={() => (selectedFilter = filterName)}
+            {selectedFrameFilter === filterName
+                ? 'border-2 border-primary'
+                : ''}"
+              on:click={() => (selectedFrameFilter = filterName)}
             >
               <img
                 src="/frame/Styling 1.png"
