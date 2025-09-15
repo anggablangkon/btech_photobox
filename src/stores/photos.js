@@ -5,6 +5,7 @@ export const photosStore = writable({
   frameType: 0, // selected frame layout index
   photoCount: 0,
   photoIp: null,
+  imageResult: null,
   photoType: {},
 });
 
@@ -38,7 +39,7 @@ export const photoFrame = readable({
 export const photoOptions = writable({
   1: [
     { image: 1, x: 10, y: 10, w: 181, h: 110 },
-    { image: 2, x: 10, y: 135, w: 181, h: 110 },
+    { image: 2, x: 10, y: 132, w: 181, h: 110 },
     { image: 3, x: 10, y: 255, w: 181, h: 110 },
     { image: 4, x: 10, y: 380, w: 181, h: 110 },
   ],

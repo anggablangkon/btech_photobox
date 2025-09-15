@@ -6,7 +6,6 @@
     photoOptions,
   } from "../../stores/photos.js";
   import { goto } from "$app/navigation";
-  import { preventDefault } from "svelte/legacy";
 
   let videos = [];
   let canvas;
@@ -34,14 +33,19 @@
   let stream;
 
   onMount(async () => {
+    photosStore.subscribe((v) => {
+      selectedFrame = v.frameType;
+    });
+
     photoFrames.subscribe((v) => {
-      frameLayout = v[5];
+      frameLayout = v[selectedFrame];
     });
 
     photoOptions.subscribe((v) => {
-      frameOptions = v[5];
+      frameOptions = v[selectedFrame];
     });
 
+    console.log(frameLayout, frameOptions);
     startSession();
   });
 
@@ -55,13 +59,11 @@
 
   // --- SESSION FUNCTIONS ---
   async function startSession() {
-    const frame = frames[selectedFrame];
     sessionStarted = true;
     currentFrame = 0;
     photos = Array(framesCount).fill(null);
     retakeCounts = Array(framesCount).fill(0);
     framesCount = 4;
-    photosStore.update((state) => ({ ...state, frameType: selectedFrame }));
 
     stream = await navigator.mediaDevices.getUserMedia({ video: true });
 
@@ -130,6 +132,8 @@
       alert("❌ Retake limit reached for this photo!");
       return;
     }
+
+    // alert('test')
     sessionStarted = true;
     previewResult = false;
     clearInterval(autoContinueTimer);
@@ -174,7 +178,8 @@
         <div
           id="frame"
           class="frame relative shadow-lg overflow-hidden object-contain"
-          style="height:600px;width:400px"
+          style="height:{frameLayout.height}px;width:{frameLayout.width}px"
+          px
         >
           <img src={frameLayout.src} class="absolute z-10 h-full" />
           {#each frameOptions || [] as t, i}
@@ -206,6 +211,7 @@
             <div
               class="p-5 w-[200px] h-[150px] border cursor-pointer"
               class:border-yellow-400={i === selectedFrameIndex}
+              aria-roledescription="select frame"
               on:click={() => {
                 selectedFrameIndex = i;
               }}
@@ -225,7 +231,7 @@
               on:click={retakePhoto(selectedFrameIndex)}>Retake Photo</button
             >
           {/if}
-          <button class="btn btn-neutral" on:click={goto("/preview")}
+          <button class="btn btn-neutral" on:click={() => goto("/preview")}
             >Selanjutnya</button
           >
         </div>

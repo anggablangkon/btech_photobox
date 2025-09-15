@@ -162,7 +162,6 @@
             }
 
             img.parentNode.replaceChild(canvas, img);
-            console.log(img.parentNode);
 
             resolve();
           };
@@ -170,6 +169,19 @@
       })
     );
     finishStatus = true;
+
+    const node = document.querySelector(".frame");
+
+    html2canvas(node, {
+      useCORS: true,
+      allowTaint: false,
+      imageTimeout: 3000,
+      scale: 2,
+    }).then((canvas) => {
+      photosStore.update((state) => {
+        return { ...state, imageResult: canvas };
+      });
+    });
   }
 </script>
 
