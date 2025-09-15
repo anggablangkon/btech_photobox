@@ -176,19 +176,15 @@
           class="frame relative shadow-lg overflow-hidden object-contain"
           style="height:600px;width:400px"
         >
-          <img
-            src={frameLayout.src}
-            class="absolute z-10 h-full"
-            alt=""
-            srcset=""
-          />
+          <img src={frameLayout.src} class="absolute z-10 h-full" />
           {#each frameOptions || [] as t, i}
             <div
               class="absolute overflow-hidden shadow flex items-center justify-center {t.image}"
               style="left:{t.x}px; top:{t.y}px; width:{t.w}px; height:{t.h}px;"
             >
               <img
-                src={photos[t.image - 1] || "photo-1606107557195-0e29a4b5b4aa.webp"}
+                src={photos[t.image - 1] ||
+                  "photo-1606107557195-0e29a4b5b4aa.webp"}
                 alt={`Foto ${i}`}
                 class="h-full w-full object-cover"
                 crossorigin="anonymous"

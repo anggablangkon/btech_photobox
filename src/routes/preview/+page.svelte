@@ -9,16 +9,13 @@
   import Konva from "konva";
   import html2canvas from "html2canvas-pro";
 
-  let stage;
-  let layer;
   let photos = [];
-  let tr;
   let frame;
   let frameOption;
   let selectedMenu = "filter";
   let selectedFilter = "normal";
   let selectedFrameFilter = "normal";
-
+  let finishStatus = false;
   const filterPresets = {
     normal: "",
     grayscale: "grayscale(100%)",
@@ -76,6 +73,49 @@
       ".frame div.absolute img"
     );
 
+    const frame = document.querySelector("img.frame");
+    const canvasFrame = document.createElement("canvas");
+    const ctx = canvasFrame.getContext("2d");
+    const imageObj = new Image();
+    imageObj.src = frame.src;
+    imageObj.onload = () => {
+      const filter = frame.style.filter || "";
+      if (!filter) return resolve();
+      console.log(imageObj.offsetHeight, frame.offsetWidth);
+      const displayWidth = frame.offsetWidth;
+      const displayHeight = frame.offsetHeight;
+
+      canvasFrame.width = displayWidth;
+      canvasFrame.height = displayHeight;
+
+      // Apply filter
+      ctx.filter = filter;
+
+      // === Object-fit: cover emulation ===
+      const iw = imageObj.width;
+      const ih = imageObj.height;
+      const cw = canvasFrame.width;
+      const ch = canvasFrame.height;
+
+      const scale = Math.max(cw / iw, ch / ih);
+      const sw = iw * scale;
+      const sh = ih * scale;
+
+      const dx = (cw - sw) / 2;
+      const dy = (ch - sh) / 2;
+
+      ctx.filter = filter;
+      ctx.drawImage(imageObj, dx, dy, sw, sh);
+      canvasFrame.className = "absolute z-10 h-full frame";
+      // Replace image with canvas in DOM
+      if (!frame.parentNode) {
+        console.warn("Image has no parent node:", frame);
+        return resolve();
+      }
+
+      frame.parentNode.replaceChild(canvasFrame, frame);
+    };
+
     // Replace images with canvas
     await Promise.all(
       Array.from(photoContainers).map((img) => {
@@ -129,6 +169,7 @@
         });
       })
     );
+    finishStatus = true;
   }
 </script>
 
@@ -140,7 +181,19 @@
       ✅ Selesai
     </button>
 
-    <button on:click={downloadImage} class="btn btn-primary">
+    <button
+      on:click={finishSessionFilter}
+      class="btn btn-primary"
+      class:hidden={finishStatus}
+    >
+      Finish
+    </button>
+
+    <button
+      on:click={downloadImage}
+      class="btn btn-primary"
+      class:hidden={!finishStatus}
+    >
       ⬇️ Download Frame
     </button>
   </div>
@@ -159,8 +212,11 @@
           >
             <img
               src={frame.src}
-              class="absolute z-10 h-full"
-              style="filter:{filterPresets[selectedFrameFilter] || ''}; "
+              class="absolute z-10 h-full frame"
+              style="
+                height:{frame.height}px;
+                width:{frame.width}px;
+              filter:{filterPresets[selectedFrameFilter] || ''}"
             />
             {#each frameOption || [] as t, i}
               {#if photos[t.image - 1]}
@@ -192,7 +248,6 @@
                 </div>
               {/if}
             {/each}
-            <div id="frame-sticker" class="z-20 absolute"></div>
           </div>
         </div>
       </div>
