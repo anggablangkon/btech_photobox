@@ -29,7 +29,7 @@
     <div class="w-full h-full flex justify-center relative mx-auto">
       <div class="p-2 w-1/2">
         <div
-          class="w-3/4 h-3/4 p-2 bg-base-300/25 shadow-md mx-auto text-center my-3"
+          class="w-3/4 p-2 bg-base-300/25 shadow-md mx-auto text-center my-3"
         >
           <h1 class="mb-3 font-bold text-xl mt-3">{photoType.title}</h1>
           <div class=" w-5/6 h-5/6 bg-base-300 items-center mx-auto">
