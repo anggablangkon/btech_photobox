@@ -19,6 +19,7 @@
 
     goto("/photobooth");
   }
+  
 </script>
 
 <div class="w-full block pb-15">

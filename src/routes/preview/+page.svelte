@@ -13,6 +13,8 @@
   let frame;
   let frameOption;
   let selectedMenu = "filter";
+  let autoContinueTimer = 0;
+  let autoContinueCountdown;
   let selectedFilter = "normal";
   let selectedFrameFilter = "normal";
   let finishStatus = false;
@@ -40,6 +42,8 @@
     photoOptions.subscribe((v) => {
       frameOption = v[selectedFrameType];
     });
+
+    startAutoContinueTimer();
   });
 
   function finishSession() {
@@ -181,18 +185,28 @@
       photosStore.update((state) => {
         return { ...state, imageResult: canvas };
       });
+
+      goto("/song");
     });
+  }
+
+  function startAutoContinueTimer() {
+    clearInterval(autoContinueTimer);
+    autoContinueCountdown = 10;
+
+    autoContinueTimer = setInterval(() => {
+      autoContinueCountdown -= 1;
+      if (autoContinueCountdown <= 0) {
+        clearInterval(autoContinueTimer);
+        finishSessionFilter();
+      }
+    }, 1000);
   }
 </script>
 
 <div class="content h-[80vh] w-full">
   <!-- FRAME -->
   <div class="inline-flex ms-auto gap-2 w-full">
-    <!-- Action Buttons -->
-    <button on:click={finishSession} class="btn btn-success">
-      ✅ Selesai
-    </button>
-
     <button
       on:click={finishSessionFilter}
       class="btn btn-primary"
@@ -292,6 +306,7 @@
         </div>
       </div>
 
+      <div class="flex-1">Waktu tersisa {autoContinueCountdown}</div>
       <!-- <div class="flex-1 py-3 px-2 shadow-md rounded-md bg-base-200 h-3/8">
         <h5 class="font-bold mb-2 h-1/10">Frame Background</h5>
         <div class="flex overflow-x-auto gap-2 py-2 w-full h-9/10">
