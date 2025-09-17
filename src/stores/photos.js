@@ -9,32 +9,36 @@ export const photosStore = writable({
   photoType: {},
 });
 
-export const photoFrame = readable({
-  1: {
+export const photoFrame = readable([
+  {
+    id: 1,
     src: "/frame/Green Clean Aesthetic Photostrip.png",
     count: 4,
     width: 200,
     height: 600,
   },
-  2: {
+  {
+    id: 2,
     src: "/frame/frame3.png",
     count: 2,
     width: 338,
     height: 600,
   },
-  3: {
+  {
+    id: 3,
     src: "/frame/Brown and Beige Aesthetic Gradient Elegant Photo Studio Photostrip.png",
     count: 4,
     width: 200,
     height: 600,
   },
-  4: {
+  {
+    id: 4,
     src: "/frame/Styling 1.png",
     count: 4,
     width: 400,
     height: 600,
   },
-});
+]);
 
 export const photoOptions = writable({
   1: [

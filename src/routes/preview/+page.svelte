@@ -32,11 +32,12 @@
 
   onMount(() => {
     unsubscribe = photosStore.subscribe((v) => {
-      selectedFrameType = v.frameType || 5;
+      selectedFrameType = v.frameType || 3;
       photos = v.photos || [];
     });
     photoFrame.subscribe((v) => {
-      frame = v[selectedFrameType];
+      frame = v.find(frame => frame.id == selectedFrameType);
+       console.log(frame,selectedFrameType)
     });
 
     photoOptions.subscribe((v) => {
@@ -172,7 +173,7 @@
         });
       })
     );
-    finishStatus = true;
+    // finishStatus = true;
 
     const node = document.querySelector(".frame");
 
@@ -192,7 +193,7 @@
 
   function startAutoContinueTimer() {
     clearInterval(autoContinueTimer);
-    autoContinueCountdown = 10;
+    autoContinueCountdown = 30;
 
     autoContinueTimer = setInterval(() => {
       autoContinueCountdown -= 1;
@@ -206,7 +207,7 @@
 
 <div class="content h-[80vh] w-full">
   <!-- FRAME -->
-  <div class="inline-flex ms-auto gap-2 w-full">
+  <div class="flex justify-between ms-auto gap-2 w-full">
     <button
       on:click={finishSessionFilter}
       class="btn btn-primary"
@@ -214,14 +215,18 @@
     >
       Finish
     </button>
-
+<!-- 
     <button
       on:click={downloadImage}
       class="btn btn-primary"
       class:hidden={!finishStatus}
     >
       ⬇️ Download Frame
-    </button>
+    </button> -->
+    
+    <span class="font-bold">
+      Waktu tersisa {autoContinueCountdown} detik lagi
+    </span>
   </div>
 
   <div class="flex gap-6 p-6 flex-wrap max-h-full">
@@ -233,16 +238,12 @@
           <div
             id="frame"
             class="frame relative shadow-lg overflow-hidden object-contain"
-            style="height:{frame.height}px;width:{frame.width}px;"
+            style="height:{frame.height}px;width:400px;"
             on:click={deselectSticker}
           >
             <img
               src={frame.src}
-              class="absolute z-10 h-full frame"
-              style="
-                height:{frame.height}px;
-                width:{frame.width}px;
-              filter:{filterPresets[selectedFrameFilter] || ''}"
+              class="absolute z-10 h-full w-[{frame.width}px] frame"
             />
             {#each frameOption || [] as t, i}
               {#if photos[t.image - 1]}
@@ -306,7 +307,6 @@
         </div>
       </div>
 
-      <div class="flex-1">Waktu tersisa {autoContinueCountdown}</div>
       <!-- <div class="flex-1 py-3 px-2 shadow-md rounded-md bg-base-200 h-3/8">
         <h5 class="font-bold mb-2 h-1/10">Frame Background</h5>
         <div class="flex overflow-x-auto gap-2 py-2 w-full h-9/10">
