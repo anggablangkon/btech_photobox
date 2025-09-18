@@ -20,7 +20,7 @@
 
   function startCountdownTimer() {
     clearInterval(autoContinueTimer);
-    autoCountdownTimer = 5;
+    autoCountdownTimer = 30;
     autoContinueTimer = setInterval(() => {
       autoCountdownTimer -= 1;
       if (autoCountdownTimer <= 0) {

@@ -83,39 +83,39 @@
   async function takeFrame(index, loop = true) {
     isTakingPhoto = true;
     captureCountdown = 3;
-
-    console.log(canvas.width, canvas.height);
+    
     while (captureCountdown > 0) {
       await new Promise((r) => setTimeout(r, 1000));
       captureCountdown -= 1;
     }
-
     showBackground = true;
-    isCameraOn = false;
+
     if (!canvas) {
       console.error("Wait for canvas ready");
       return;
     }
 
     const ctx = canvas.getContext("2d");
+    isCameraOn = false;
+
+    ctx.filter = ""; // no filter
+    const videoRatio = video.videoWidth / video.videoHeight; // ratio kamera
+    const targetWidth = 1024;
+    const targetHeight = 768;
+    const targetRatio = targetWidth / targetHeight; // rasio target
+    insertVideoCapture({
+      ctx,
+      videoRatio,
+      targetRatio,
+      targetWidth,
+      targetHeight,
+    });
 
     const bgImage = new Image();
 
     bgImage.src = background;
     bgImage.onload = () => {
-      ctx.filter = ""; // no filter
-      const videoRatio = video.videoWidth / video.videoHeight; // ratio kamera
-      const targetWidth = 1024;
-      const targetHeight = 768;
-      const targetRatio = targetWidth / targetHeight; // rasio target
 
-      insertVideoCapture({
-        ctx,
-        videoRatio,
-        targetRatio,
-        targetWidth,
-        targetHeight,
-      });
       insertImageCapture({
         ctx,
         videoRatio,
@@ -366,7 +366,8 @@
       {#if video}
         <img
           src={background}
-          alt=""
+          alt="Background Frame"
+          on:load={() => isCameraOn = true}
           class="absolute bottom-0 start-0 background"
         />
       {/if}
@@ -387,12 +388,6 @@
   <!-- PHOTO PREVIEW AFTER CAPTURE -->
   {#if photoPreview && !previewResult}
     <div class="mt-6 w-[1024px] h-[768px] mx-auto text-center">
-      {#if autoContinueCountdown > 0}
-        <p class="text-red-600 font-bold mb-2">
-          ⏳ Auto lanjut dalam {autoContinueCountdown}s...
-        </p>
-      {/if}
-
       {#if showBackground}
         <img
           src={photoPreview}
