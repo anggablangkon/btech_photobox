@@ -6,8 +6,6 @@
     photoOptions,
   } from "../../stores/photos.js";
   import { goto } from "$app/navigation";
-  import { Context } from "konva/lib/Context";
-
   let videos = [];
   let canvas;
 
@@ -23,6 +21,7 @@
   // Countdown timers
   let retakePhotos = [];
   let captureCountdown = 0;
+  let showBackground = false;
   let autoContinueCountdown = 0;
   let previewResult = false;
   let isTakingPhoto = false;
@@ -33,10 +32,12 @@
   let photoPreview = null;
   let stream;
   let isRetake = false;
-
+  let background;
+  let isLoading = true;
   onMount(async () => {
     photosStore.subscribe((v) => {
       selectedFrame = v.frameType || 1;
+      background = v?.background?.url || "/background/test.png";
     });
 
     photoFrames.subscribe((v) => {
@@ -61,21 +62,21 @@
   // --- SESSION FUNCTIONS ---
   async function startSession() {
     sessionStarted = true;
-    isCameraOn = true;
+    isLoading = false;
     currentFrame = 0;
     photos = Array(framesCount).fill(null);
     framesCount = frameLayout.count || 4;
-
     stream = await navigator.mediaDevices.getUserMedia({ video: true });
 
     if (video) {
       video.srcObject = stream;
       video.play();
 
-      console.log(video.videoWidth, video.videoHeight);
       canvas.width = video.videoWidth || 1024;
-      canvas.height = video.videoHeight || 720;
+      canvas.height = video.videoHeight || 768;
     }
+    isCameraOn = true;
+
     takeFrame(currentFrame);
   }
 
@@ -83,20 +84,46 @@
     isTakingPhoto = true;
     captureCountdown = 3;
 
+    console.log(canvas.width, canvas.height);
     while (captureCountdown > 0) {
       await new Promise((r) => setTimeout(r, 1000));
       captureCountdown -= 1;
     }
 
+    showBackground = true;
     isCameraOn = false;
+    if (!canvas) {
+      console.error("Wait for canvas ready");
+      return;
+    }
+
     const ctx = canvas.getContext("2d");
 
     const bgImage = new Image();
-    bgImage.src = "/ip/test.png";
+
+    bgImage.src = background;
     bgImage.onload = () => {
       ctx.filter = ""; // no filter
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+      const videoRatio = video.videoWidth / video.videoHeight; // ratio kamera
+      const targetWidth = 1024;
+      const targetHeight = 768;
+      const targetRatio = targetWidth / targetHeight; // rasio target
+
+      insertVideoCapture({
+        ctx,
+        videoRatio,
+        targetRatio,
+        targetWidth,
+        targetHeight,
+      });
+      insertImageCapture({
+        ctx,
+        videoRatio,
+        targetRatio,
+        targetWidth,
+        targetHeight,
+        bgImage,
+      });
       const dataUrl = canvas.toDataURL("image/png");
 
       photoPreview = dataUrl;
@@ -110,6 +137,49 @@
 
       startAutoContinueTimer();
     };
+  }
+
+  function insertVideoCapture(options) {
+    const { ctx, videoRatio, targetRatio, targetWidth, targetHeight } = options;
+    let sx, sy, sWidth, sHeight; // area source dari video
+
+    if (videoRatio > targetRatio) {
+      // kamera lebih lebar → crop horizontal
+      sHeight = video.videoHeight;
+      sWidth = sHeight * targetRatio;
+      sx = (video.videoWidth - sWidth) / 2;
+      sy = 0;
+    } else {
+      // kamera lebih tinggi → crop vertical
+      sWidth = video.videoWidth;
+      sHeight = sWidth / targetRatio;
+      sx = 0;
+      sy = (video.videoHeight - sHeight) / 2;
+    }
+    ctx.drawImage(
+      video,
+      sx,
+      sy,
+      sWidth,
+      sHeight,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+  }
+
+  function insertImageCapture(options) {
+    const { ctx, videoRatio, targetRatio, targetWidth, targetHeight, bgImage } =
+      options;
+    const imgEl = document.querySelector("img.background");
+    const scaledHeight =
+      (targetWidth / bgImage.naturalWidth) * bgImage.naturalHeight;
+    const y = targetHeight - scaledHeight;
+
+    console.log(targetHeight, y, scaledHeight);
+
+    ctx.drawImage(bgImage, 0, y, targetWidth, scaledHeight);
   }
 
   function startAutoContinueTimer() {
@@ -151,7 +221,6 @@
     currentFrame = retakePhotos[0];
     previewResult = false;
     photos[currentFrame] = null;
-    isCameraOn = true;
 
     await tick();
 
@@ -161,15 +230,15 @@
       video.srcObject = stream;
       video.play();
 
-      console.log(video.videoWidth, video.videoHeight);
-      canvas.width = video.videoWidth || 640;
-      canvas.height = video.videoHeight || 480;
+      canvas.width = video.videoWidth || 1024;
+      canvas.height = video.videoHeight || 768;
     }
+    isCameraOn = true;
+
     takeFrame(currentFrame);
   }
 
   function goNextFrameRetake() {
-    console.log(retakePhotos);
     retakePhotos.shift();
     if (retakePhotos.length > 0) {
       currentFrame = retakePhotos[0];
@@ -212,119 +281,133 @@
 
 <!-- VIDEO / CAPTURE -->
 
-{#if previewResult && frameLayout}
-  <!-- SESSION SETUP -->
-  <div class="flex flex-wrap w-full">
-    <div
-      class="flex justify-center md:items-center overflow-hidden flex-shrink-0 w-2/4 rounded-4xl my-auto"
-    >
-      <div class="p-10 bg-emerald-400 rounded-2xl">
-        <div
-          id="frame"
-          class="frame relative shadow-lg overflow-hidden object-contain"
-          style="height:{frameLayout.height}px;width:{frameLayout.width}px"
-          px
-        >
-          <img src={frameLayout.src} class="absolute z-10 h-full" />
-          {#each frameOptions || [] as t, i}
-            <div
-              class="absolute overflow-hidden shadow flex items-center justify-center {t.image}"
-              style="left:{t.x}px; top:{t.y}px; width:{t.w}px; height:{t.h}px;"
-            >
-              <img
-                src={photos[t.image - 1] ||
-                  "photo-1606107557195-0e29a4b5b4aa.webp"}
-                alt={`Foto ${i}`}
-                class="h-full w-full object-cover"
-                crossorigin="anonymous"
-              />
-            </div>
-          {/each}
-        </div>
-      </div>
-    </div>
-    <div
-      class="flex justify-center md:items-center overflow-hidden flex-shrink-0 w-2/4 my-auto"
-    >
+<canvas bind:this={canvas} style="display:none;"></canvas>
+{#if !isLoading}
+  {#if previewResult && frameLayout}
+    <!-- SESSION SETUP -->
+    <div class="flex flex-wrap w-full">
       <div
-        class="bg-emerald-200 rounded-2xl w-full flex flex-col p-10"
-        style="height:600px"
+        class="flex justify-center md:items-center overflow-hidden flex-shrink-0 w-2/4 rounded-4xl my-auto"
       >
-        <div class="flex flex-wrap gap-2 w-full">
-          {#each photos as photo, i}
-            <div
-              class="p-5 w-[200px] h-[150px] cursor-pointer p-2
-              {retakePhotos.includes(i) ? 'bg-amber-200' : 'bg-amber-50'}"
-              aria-roledescription="select frame"
-              on:click={() => {
-                addRetakePhoto(i);
-              }}
-            >
-              <img
-                class="h-full w-full object-cover"
-                src={photo}
-                alt="Foto 0"
-              />
-            </div>
-          {/each}
-        </div>
-        <div class="mt-auto ml-auto">
-          {#if retakePhotos.length > 0 && retakeLimit >= retakePhotos.length}
-            <button class="btn btn-primary" on:click={retakePhoto}
-              >Retake Photo</button
-            >
-          {/if}
-          <button class="btn btn-neutral" on:click={() => goto("/preview")}
-            >Selanjutnya</button
+        <div class="p-10 bg-emerald-400 rounded-2xl">
+          <div
+            id="frame"
+            class="frame relative shadow-lg overflow-hidden object-contain"
+            style="height:{frameLayout.height}px;width:{frameLayout.width}px"
+            px
           >
+            <img src={frameLayout.src} class="absolute z-10 h-full" />
+            {#each frameOptions || [] as t, i}
+              <div
+                class="absolute overflow-hidden shadow flex items-center justify-center {t.image}"
+                style="left:{t.x}px; top:{t.y}px; width:{t.w}px; height:{t.h}px;"
+              >
+                <img
+                  src={photos[t.image - 1] ||
+                    "photo-1606107557195-0e29a4b5b4aa.webp"}
+                  alt={`Foto ${i}`}
+                  class="h-full w-full object-cover"
+                  crossorigin="anonymous"
+                />
+              </div>
+            {/each}
+          </div>
+        </div>
+      </div>
+      <div
+        class="flex justify-center md:items-center overflow-hidden flex-shrink-0 w-2/4 my-auto"
+      >
+        <div
+          class="bg-emerald-200 rounded-2xl w-full flex flex-col p-10"
+          style="height:600px"
+        >
+          <div class="flex flex-wrap gap-2 w-full">
+            {#each photos as photo, i}
+              <div
+                class="p-5 w-[200px] h-[150px] cursor-pointer p-2
+              {retakePhotos.includes(i) ? 'bg-amber-200' : 'bg-amber-50'}"
+                aria-roledescription="select frame"
+                on:click={() => {
+                  addRetakePhoto(i);
+                }}
+              >
+                <img
+                  class="h-full w-full object-cover"
+                  src={photo}
+                  alt="Foto 0"
+                />
+              </div>
+            {/each}
+          </div>
+          <div class="mt-auto ml-auto">
+            {#if retakePhotos.length > 0 && retakeLimit >= retakePhotos.length}
+              <button
+                type="button"
+                class="btn btn-primary"
+                on:click={retakePhoto}>Retake Photo</button
+              >
+            {/if}
+            <button
+              type="button"
+              class="btn btn-neutral"
+              on:click={() => goto("/preview")}>Selanjutnya</button
+            >
+          </div>
         </div>
       </div>
     </div>
-  </div>
-{:else}
-  <div
-    class="relative mx-auto aspect-video rounded-lg overflow-hidden relative w-[1024px] h-[720px]"
-    class:hidden={!isCameraOn}
-  >
-    <video
-      bind:this={video}
-      autoplay
-      playsinline
-      muted
-      class="w-full h-full object-cover"
-    ></video>
-    {#if video}
-      <img src="/ip/test.png" alt="" class="w-full h-full absolute top-0" />
-    {/if}
-    {#if isTakingPhoto && captureCountdown > 0}
-      <div
-        class="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-6xl font-bold z-10"
-      >
-        {captureCountdown}
-      </div>
-    {/if}
-  </div>
+  {:else}
+    <div
+      class="relative mx-auto my-auto aspect-video rounded-lg overflow-hidden relative w-[1024px] h-[768px]"
+      class:hidden={!isCameraOn}
+    >
+      <video bind:this={video} autoplay playsinline muted class="w-full h-full"
+      ></video>
+      {#if video}
+        <img
+          src={background}
+          alt=""
+          class="absolute bottom-0 start-0 background"
+        />
+      {/if}
+      {#if isTakingPhoto && captureCountdown > 0}
+        <div
+          class="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-6xl font-bold z-10"
+        >
+          {captureCountdown}
+        </div>
+      {/if}
+    </div>
+    <span
+      class="loading text-center mx-auto"
+      class:hidden={isCameraOn || photoPreview}
+    ></span>
+  {/if}
 
-  <canvas bind:this={canvas} style="display:none;"></canvas>
-{/if}
+  <!-- PHOTO PREVIEW AFTER CAPTURE -->
+  {#if photoPreview && !previewResult}
+    <div class="mt-6 w-[1024px] h-[768px] mx-auto text-center">
+      {#if autoContinueCountdown > 0}
+        <p class="text-red-600 font-bold mb-2">
+          ⏳ Auto lanjut dalam {autoContinueCountdown}s...
+        </p>
+      {/if}
 
-<!-- PHOTO PREVIEW AFTER CAPTURE -->
-{#if photoPreview && !previewResult}
-  <div class="mt-6 w-[1024px] h-[720px] mx-auto text-center">
-    {#if autoContinueCountdown > 0}
-      <p class="text-red-600 font-bold mb-2">
-        ⏳ Auto lanjut dalam {autoContinueCountdown}s...
+      {#if showBackground}
+        <img
+          src={photoPreview}
+          alt={`Foto ${currentFrame + 1}`}
+          class="mx-auto my-3 rounded shadow-md object-cover w-full"
+        />
+      {/if}
+
+      <p class="mb-2 text-sm text-gray-600">
+        Foto {currentFrame + 1} dari {framesCount}
       </p>
-    {/if}
-
-    <img
-      src={photoPreview}
-      alt={`Foto ${currentFrame + 1}`}
-      class="mx-auto my-3 rounded shadow-md object-cover w-full"
-    />
-
-    <p class="mb-2 text-sm text-gray-600">
-      Foto {currentFrame + 1} dari {framesCount}
-    </p>
+    </div>
+  {/if}
+{:else}
+  <div class="w-full my-auto text-center">
+    <span class="loading"></span>
   </div>
 {/if}

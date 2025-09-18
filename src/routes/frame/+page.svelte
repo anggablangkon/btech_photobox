@@ -1,6 +1,6 @@
 <script>
   import { goto } from "$app/navigation";
-  import { onMount } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { photosStore, photoFrame as photoFrames } from "../../stores/photos";
 
   let autoContinueTimer;
@@ -10,41 +10,43 @@
   onMount(async () => {
     photoFrames.subscribe((v) => {
       frames = v;
-      startCountdownTimer()
+      startCountdownTimer();
     });
-
   });
 
-    function startCountdownTimer(){
+  onDestroy(() => {
+    clearInterval(autoContinueTimer);
+  });
+
+  function startCountdownTimer() {
     clearInterval(autoContinueTimer);
     autoCountdownTimer = 5;
     autoContinueTimer = setInterval(() => {
       autoCountdownTimer -= 1;
       if (autoCountdownTimer <= 0) {
-          clearInterval(autoContinueTimer);
-            const frameRand = Math.floor(Math.random() * frames.length);
-            selectedFrame = frames[frameRand]
-            console.log(selectedFrame)
-            selectFrame(selectedFrame.id);
+        clearInterval(autoContinueTimer);
+        const frameRand = Math.floor(Math.random() * frames.length);
+        selectedFrame = frames[frameRand];
+        selectFrame(selectedFrame.id);
       }
     }, 1000);
   }
-
 
   function selectFrame(i) {
     photosStore.update((state) => {
       return { ...state, frameType: i };
     });
 
-    goto("/photobooth");
+    goto("/background");
   }
-  
 </script>
 
 <div class="w-full block pb-15">
- <div class="flex justify-between">
+  <div class="flex justify-between">
     <h1 class="mb-3 font-bold text-xl text-center">Pilih Frame</h1>
-    <h1 class="mb-3 font-bold text-xl text-center">Waktu anda sisa {autoCountdownTimer}</h1>
+    <h1 class="mb-3 font-bold text-xl text-center">
+      Waktu anda sisa {autoCountdownTimer}
+    </h1>
   </div>
   <div
     class="h-full mx-auto flex flex-wrap justify-start gap-2 rounded-md p-1 overflow-auto"
@@ -53,7 +55,7 @@
       {#each Object.entries(frames) as [i, frames]}
         <div
           class="shadow-lg border border-1 border-base-300 w-[200px] h-[300px] flex justify-center"
-          on:click={selectFrame(frames.id)}
+          on:click={() => selectFrame(frames.id)}
         >
           <figure class="h-full p-2 overflow-hidden">
             <img

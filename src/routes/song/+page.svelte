@@ -19,7 +19,6 @@
 
   function handleTimeUpdate(index) {
     const a = audio[index];
-    console.log(a.currentTime);
     if (a.currentTime >= 20) {
       a.pause();
       a.currentTime = 0; // optional reset to start

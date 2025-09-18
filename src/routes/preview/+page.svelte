@@ -86,7 +86,6 @@
     imageObj.onload = () => {
       const filter = frame.style.filter || "";
       if (!filter) return resolve();
-      console.log(imageObj.offsetHeight, frame.offsetWidth);
       const displayWidth = frame.offsetWidth;
       const displayHeight = frame.offsetHeight;
 

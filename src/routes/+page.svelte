@@ -33,7 +33,6 @@
 
   const goPaymentPage = (photoType) => {
     selectedType = photoType;
-    console.log(selectedType);
     photosStore.update((state) => {
       return { ...state, photoType: selectedType };
     });
@@ -73,7 +72,7 @@
         {selectedType && selectedType.id == photoType.id
               ? 'border-blue-400'
               : 'border-blue-100'}"
-            on:click={goPaymentPage(photoType)}
+            on:click={() => goPaymentPage(photoType)}
           >
             <h1 class="mb-3 font-bold text-xl mt-3">Standard</h1>
             <div class="w-5/6 bg-blue-200 items-center">
