@@ -10,17 +10,19 @@
 
   onMount(() => {
     isLoading = false;
+    startCountdownTimer();
   });
+
   function startCountdownTimer() {
     clearInterval(autoContinueTimer);
-    autoCountdownTimer = 5;
+    autoCountdownTimer = 3;
     autoContinueTimer = setInterval(() => {
       autoCountdownTimer -= 1;
       if (autoCountdownTimer <= 0) {
         clearInterval(autoContinueTimer);
-        const backgroundRand = Math.floor(Math.random() * frames.length);
+        const backgroundRand = Math.floor(Math.random() * backgroundLists.length);
         const background = backgroundLists.find((v) => (v.id = backgroundRand));
-        selectFrame(background.id);
+        selectBackground(background.id);
       }
     }, 1000);
   }
@@ -29,7 +31,7 @@
     clearInterval(autoContinueTimer);
   });
 
-  function selectFrame(i) {
+  function selectBackground(i) {
     const background = backgroundLists.find((v) => (v.id = i));
     photosStore.update((state) => {
       return { ...state, background: background };
@@ -53,7 +55,7 @@
         {#each Object.entries(backgroundLists) as [i, frames]}
           <div
             class="shadow-lg border border-1 border-base-300 w-[300px] h-[200px] flex justify-center"
-            on:click={() => selectFrame(frames.id)}
+            on:click={() => selectBackground(frames.id)}
           >
             <figure class="h-full p-2 overflow-hidden">
               <img

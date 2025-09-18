@@ -7,6 +7,8 @@ export const photosStore = writable({
   photoIp: null,
   imageResult: null,
   photoType: {},
+  selectedSong: null,
+  filteredPhotos: [],
 });
 
 export const photoFrame = readable([
@@ -21,7 +23,7 @@ export const photoFrame = readable([
     id: 2,
     src: "/frame/frame3.png",
     count: 2,
-    width: 338,
+    width: 400,
     height: 600,
   },
   {
