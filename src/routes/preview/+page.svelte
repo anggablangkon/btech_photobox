@@ -1,175 +1,335 @@
 <script>
-  import { photosStore } from "../../stores/photos.js";
-  import { onMount } from "svelte";
+  import {
+    photosStore,
+    photoFrame,
+    photoOptions,
+  } from "../../stores/photos.js";
+  import { goto } from "$app/navigation";
+  import { onMount, onDestroy } from "svelte";
+  import Konva from "konva";
+  import html2canvas from "html2canvas-pro";
 
   let photos = [];
+  let frame;
+  let frameOption;
+  let selectedMenu = "filter";
+  let autoContinueTimer = 0;
+  let autoContinueCountdown;
+  let selectedFilter = "normal";
+  let selectedFrameFilter = "normal";
+  let finishStatus = false;
+  const filterPresets = {
+    normal: "",
+    grayscale: "grayscale(100%)",
+    bright: "brightness(150%)",
+    vintage: "sepia(0.5) contrast(1.2) brightness(1.1)",
+    noir: "grayscale(100%) contrast(2) brightness(0.8)",
+    pastel: "saturate(1.2) brightness(1.2) contrast(0.9)",
+  };
 
-  // Subscribe ke photosStore dan transformasi data ke objek jika masih string
-  const unsubscribe = photosStore.subscribe((value) => {
-    photos = value.map((p) =>
-      typeof p === "string" ? { src: p, overlays: [] } : p
-    );
-  });
+  let selectedFrameType = 1;
+  let unsubscribe;
 
   onMount(() => {
-    return () => unsubscribe();
+    unsubscribe = photosStore.subscribe((v) => {
+      selectedFrameType = v.frameType || 3;
+      photos = v.photos || [];
+    });
+    photoFrame.subscribe((v) => {
+      frame = v.find(frame => frame.id == selectedFrameType);
+       console.log(frame,selectedFrameType)
+    });
+
+    photoOptions.subscribe((v) => {
+      frameOption = v[selectedFrameType];
+    });
+
+    startAutoContinueTimer();
   });
 
-  // Handle drag start
-  function handleDragStart(event, overlay, photoIndex) {
-    const offsetX = event.clientX - overlay.x;
-    const offsetY = event.clientY - overlay.y;
-
-    // Function untuk memindahkan posisi overlay
-    function handleDragMove(e) {
-      const newX = e.clientX - offsetX;
-      const newY = e.clientY - offsetY;
-
-      // Update posisi overlay di store
-      const newPhotos = [...photos];
-      newPhotos[photoIndex].overlays = newPhotos[photoIndex].overlays.map(
-        (o) => (o === overlay ? { ...o, x: newX, y: newY } : o)
-      );
-      photosStore.set(newPhotos);
-    }
-
-    // Stop drag ketika mouse dilepas
-    function handleDragEnd() {
-      document.removeEventListener("mousemove", handleDragMove);
-      document.removeEventListener("mouseup", handleDragEnd);
-    }
-
-    document.addEventListener("mousemove", handleDragMove);
-    document.addEventListener("mouseup", handleDragEnd);
+  function finishSession() {
+    alert("✅ Frame selesai!");
+    photosStore.set([]);
+    goto("/");
   }
 
-  function addIcon(photoIndex) {
-    const newPhotos = [...photos];
-    if (!newPhotos[photoIndex].overlays) newPhotos[photoIndex].overlays = [];
-    newPhotos[photoIndex].overlays.push({
-      type: "icon",
-      icon: "❤️",
-      x: 50, // Posisi awal
-      y: 50, // Posisi awal
+  // ... your existing code ...
+
+  async function downloadImage() {
+    // Now capture the frame
+    const node = document.querySelector(".frame");
+
+    html2canvas(node, {
+      useCORS: true,
+      allowTaint: false,
+      imageTimeout: 3000,
+      scale: 2,
+    }).then((canvas) => {
+      const link = document.createElement("a");
+      link.href = canvas.toDataURL("image/png");
+      link.download = "photobox.png";
+      link.click();
     });
-    photosStore.set(newPhotos);
   }
 
-  function addText(photoIndex) {
-    const newPhotos = [...photos];
-    if (!newPhotos[photoIndex].overlays) newPhotos[photoIndex].overlays = [];
-    newPhotos[photoIndex].overlays.push({
-      type: "text",
-      text: "Hello",
-      x: 100, // Posisi awal
-      y: 100, // Posisi awal
-      color: "blue",
-      size: 18,
+  async function finishSessionFilter() {
+    selectedMenu = "sticker";
+    const photoContainers = document.querySelectorAll(
+      ".frame div.absolute img"
+    );
+
+    const frame = document.querySelector("img.frame");
+    const canvasFrame = document.createElement("canvas");
+    const ctx = canvasFrame.getContext("2d");
+    const imageObj = new Image();
+    imageObj.src = frame.src;
+    imageObj.onload = () => {
+      const filter = frame.style.filter || "";
+      if (!filter) return resolve();
+      const displayWidth = frame.offsetWidth;
+      const displayHeight = frame.offsetHeight;
+
+      canvasFrame.width = displayWidth;
+      canvasFrame.height = displayHeight;
+
+      // Apply filter
+      ctx.filter = filter;
+
+      // === Object-fit: cover emulation ===
+      const iw = imageObj.width;
+      const ih = imageObj.height;
+      const cw = canvasFrame.width;
+      const ch = canvasFrame.height;
+
+      const scale = Math.max(cw / iw, ch / ih);
+      const sw = iw * scale;
+      const sh = ih * scale;
+
+      const dx = (cw - sw) / 2;
+      const dy = (ch - sh) / 2;
+
+      ctx.filter = filter;
+      ctx.drawImage(imageObj, dx, dy, sw, sh);
+      canvasFrame.className = "absolute z-10 h-full frame";
+      // Replace image with canvas in DOM
+      if (!frame.parentNode) {
+        console.warn("Image has no parent node:", frame);
+        return resolve();
+      }
+
+      frame.parentNode.replaceChild(canvasFrame, frame);
+    };
+
+    // Replace images with canvas
+    await Promise.all(
+      Array.from(photoContainers).map((img) => {
+        return new Promise((resolve) => {
+          const filter = img.style.filter || "";
+          if (!filter) return resolve();
+
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          const imageObj = new Image();
+          imageObj.src = img.src;
+          imageObj.onload = () => {
+            // Use the displayed size of the img
+            const displayWidth = img.offsetWidth;
+            const displayHeight = img.offsetHeight;
+
+            canvas.width = displayWidth;
+            canvas.height = displayHeight;
+
+            // Apply filter
+            ctx.filter = filter;
+
+            // === Object-fit: cover emulation ===
+            const iw = imageObj.width;
+            const ih = imageObj.height;
+            const cw = canvas.width;
+            const ch = canvas.height;
+
+            const scale = Math.max(cw / iw, ch / ih);
+            const sw = iw * scale;
+            const sh = ih * scale;
+
+            const dx = (cw - sw) / 2;
+            const dy = (ch - sh) / 2;
+
+            ctx.filter = filter;
+            ctx.drawImage(imageObj, dx, dy, sw, sh);
+
+            // Replace image with canvas in DOM
+            if (!img.parentNode) {
+              console.warn("Image has no parent node:", img);
+              return resolve();
+            }
+
+            img.parentNode.replaceChild(canvas, img);
+
+            resolve();
+          };
+        });
+      })
+    );
+    // finishStatus = true;
+
+    const node = document.querySelector(".frame");
+
+    html2canvas(node, {
+      useCORS: true,
+      allowTaint: false,
+      imageTimeout: 3000,
+      scale: 2,
+    }).then((canvas) => {
+      photosStore.update((state) => {
+        return { ...state, imageResult: canvas };
+      });
+
+      goto("/song");
     });
-    photosStore.set(newPhotos);
+  }
+
+  function startAutoContinueTimer() {
+    clearInterval(autoContinueTimer);
+    autoContinueCountdown = 30;
+
+    autoContinueTimer = setInterval(() => {
+      autoContinueCountdown -= 1;
+      if (autoContinueCountdown <= 0) {
+        clearInterval(autoContinueTimer);
+        finishSessionFilter();
+      }
+    }, 1000);
   }
 </script>
 
-{#if photos.length > 0}
-  <h2>Preview Foto</h2>
-  <div style="display: flex; flex-wrap: wrap;">
-    {#each photos as photo, idx}
-      {#if photo}
-        <div
-          class="photo-wrapper"
-          style="position: relative; width: 200px; margin: 0.5rem;"
-        >
-          <!-- Gambar frame -->
+<div class="content h-[80vh] w-full">
+  <!-- FRAME -->
+  <div class="flex justify-between ms-auto gap-2 w-full">
+    <button
+      on:click={finishSessionFilter}
+      class="btn btn-primary"
+      class:hidden={finishStatus}
+    >
+      Finish
+    </button>
+<!-- 
+    <button
+      on:click={downloadImage}
+      class="btn btn-primary"
+      class:hidden={!finishStatus}
+    >
+      ⬇️ Download Frame
+    </button> -->
+    
+    <span class="font-bold">
+      Waktu tersisa {autoContinueCountdown} detik lagi
+    </span>
+  </div>
+
+  <div class="flex gap-6 p-6 flex-wrap max-h-full">
+    {#if frame}
+      <div
+        class="flex justify-center md:items-center overflow-hidden flex-shrink-0 w-1/3 rounded-4xl my-auto"
+      >
+        <div class="p-10 bg-emerald-400 rounded-2xl">
           <div
-            class="frame"
-            style="position: absolute; top: 0; left: 0; right: 0; bottom: 0;"
+            id="frame"
+            class="frame relative shadow-lg overflow-hidden object-contain"
+            style="height:{frame.height}px;width:400px;"
+            on:click={deselectSticker}
           >
             <img
-              src="frame_image_url.png"
-              alt="Frame"
-              style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;"
+              src={frame.src}
+              class="absolute z-10 h-full w-[{frame.width}px] frame"
             />
-          </div>
-
-          <img
-            id="photo-{idx}"
-            src={photo.src}
-            alt={`Foto ${idx + 1}`}
-            style="width: 100%; border-radius: 8px; position: relative; z-index: 1;"
-          />
-
-          {#if photo.overlays}
-            {#each photo.overlays as overlay}
-              {#if overlay.type === "icon"}
+            {#each frameOption || [] as t, i}
+              {#if photos[t.image - 1]}
                 <div
-                  class="overlay icon"
-                  style="left: {overlay.x}px; top: {overlay.y}px;"
-                  on:mousedown={(event) => handleDragStart(event, overlay, idx)}
+                  class="absolute overflow-hidden shadow flex items-center justify-center {t.image}"
+                  style="left:{t.x}px; top:{t.y}px; width:{t.w}px; height:{t.h}px;"
                 >
-                  {overlay.icon}
+                  <img
+                    src={photos[t.image - 1] || ""}
+                    alt={`Foto ${i}`}
+                    class="h-full w-full object-cover"
+                    crossorigin="anonymous"
+                    style="filter:{filterPresets[selectedFilter] || ''}; "
+                  />
                 </div>
-              {:else if overlay.type === "text"}
+              {:else}
                 <div
-                  class="overlay text"
-                  style="left: {overlay.x}px; top: {overlay.y}px; color: {overlay.color}; font-size: {overlay.size}px;"
-                  on:mousedown={(event) => handleDragStart(event, overlay, idx)}
+                  class="absolute overflow-hidden shadow flex items-center justify-center {t.image}"
+                  style="left:{t.x}px; top:{t.y}px; width:{t.w}px; height:{t.h}px;"
                 >
-                  {overlay.text}
+                  <img
+                    src={photos[t.image - 1] ||
+                      "photo-1606107557195-0e29a4b5b4aa.webp"}
+                    alt={`Foto ${i}`}
+                    class="h-full w-full object-cover"
+                    crossorigin="anonymous"
+                    style="filter:{filterPresets[selectedFilter] || ''}; "
+                  />
                 </div>
               {/if}
             {/each}
-          {/if}
-
-          <button on:click={() => addIcon(idx)}>Tambah Icon ❤️</button>
-          <button on:click={() => addText(idx)}>Tambah Text</button>
+          </div>
         </div>
-      {/if}
-    {/each}
+      </div>
+    {/if}
+
+    <div class="h-[75vh] flex-1 flex flex-col overflow-hidden gap-2 w-full">
+      <div class="py-3 px-2 shadow-md rounded-md bg-base-200 h-3/8">
+        <h5 class="font-bold mb-2 h-1/8">Filter</h5>
+        <div class="flex gap-2 overflow-x-auto h-7/8">
+          {#each Object.entries(filterPresets) as [filterName, filterValue]}
+            <div
+              class={`card w-[180px] h-[180px] flex-shrink-0 cursor-pointer ${
+                selectedFilter === filterName ? "border-2 border-primary" : ""
+              }`}
+              on:click={() => (selectedFilter = filterName)}
+            >
+              <figure class="w-full h-full overflow-hidden">
+                <img
+                  src="https://img.daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.webp"
+                  alt={filterName}
+                  class="object-cover w-full h-full"
+                  style={`filter:${filterValue}`}
+                />
+              </figure>
+              <div class="card-body p-2">
+                <h2 class="card-title text-sm">{filterName}</h2>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+
+      <!-- <div class="flex-1 py-3 px-2 shadow-md rounded-md bg-base-200 h-3/8">
+        <h5 class="font-bold mb-2 h-1/10">Frame Background</h5>
+        <div class="flex overflow-x-auto gap-2 py-2 w-full h-9/10">
+          {#each Object.entries(filterPresets) as [filterName, filterValue]}
+            <div
+              class="card p-2 flex-shrink-0 h-full
+            {selectedFrameFilter === filterName
+                ? 'border-2 border-primary'
+                : ''}"
+              on:click={() => (selectedFrameFilter = filterName)}
+            >
+              <img
+                src="/frame/Styling 1.png"
+                alt="/frame/Styling 1.png"
+                class="object-cover w-full h-11/12"
+                style={`filter:${filterValue}`}
+              />
+              <div class="card-body p-2">
+                <h2 class="card-title text-sm">{filterName}</h2>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div> -->
+    </div>
   </div>
-{:else}
-  <p>Belum ada foto untuk preview.</p>
-{/if}
-
-<style>
-  .photo-wrapper {
-    position: relative;
-    display: inline-block;
-    margin: 0.5rem;
-  }
-
-  .photo-wrapper img {
-    display: block;
-    max-width: 200px;
-    border-radius: 8px;
-  }
-
-  .frame {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 0; /* Frame berada di bawah gambar */
-  }
-
-  .overlay {
-    position: absolute;
-    user-select: none;
-    pointer-events: all; /* Pastikan overlay dapat menerima event */
-    cursor: grab; /* Menunjukkan bahwa elemen ini bisa digeser */
-  }
-
-  .overlay.icon {
-    font-size: 2rem;
-  }
-
-  .overlay.text {
-    font-weight: bold;
-    text-shadow: 1px 1px 2px #000;
-  }
-
-  /* Feedback ketika sedang dragging */
-  .overlay:active {
-    cursor: grabbing;
-  }
-</style>
+</div>

@@ -1,152 +1,413 @@
 <script>
-  import { onMount } from "svelte";
-  import { photosStore } from "../../stores/photos.js";
+  import { onMount, onDestroy, tick } from "svelte";
+  import {
+    photosStore,
+    photoFrame as photoFrames,
+    photoOptions,
+  } from "../../stores/photos.js";
   import { goto } from "$app/navigation";
-
-  let video;
+  let videos = [];
   let canvas;
+
+  // Session state
   let photos = [];
+  let video;
   let framesCount = 1;
-  let selectedFilter = "normal";
-  let countdown = 0;
-  let isTakingPhotos = false;
+  let currentFrame = 0;
+  let selectedFrame = null;
+  let retakeLimit = 2;
+  let sessionStarted = false;
 
-  const filterPresets = {
-    normal: "",
-    grayscale: "grayscale(100%)",
-    blur: "blur(5px)",
-    bright: "brightness(150%)",
-    vintage: "sepia(0.5) contrast(1.2) brightness(1.1)",
-    monochrome: "grayscale(100%) contrast(1.5)",
-    cerbright: "contrast(1.4) brightness(1.2)",
-  };
-
+  // Countdown timers
+  let retakePhotos = [];
+  let captureCountdown = 0;
+  let showBackground = false;
+  let autoContinueCountdown = 0;
+  let previewResult = false;
+  let isTakingPhoto = false;
+  let frameLayout = null;
+  let frameOptions = null;
+  let autoContinueTimer;
+  let isCameraOn = false;
+  let photoPreview = null;
+  let stream;
+  let isRetake = false;
+  let background;
+  let isLoading = true;
   onMount(async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject = stream;
-    video.play();
+    photosStore.subscribe((v) => {
+      selectedFrame = v.frameType || 1;
+      background = v?.background?.url || "/background/test.png";
+    });
+
+    photoFrames.subscribe((v) => {
+      frameLayout = v.find((frame) => frame.id === selectedFrame);
+    });
+
+    photoOptions.subscribe((v) => {
+      frameOptions = v[selectedFrame];
+    });
+
+    startSession();
   });
 
-  async function takePhotos() {
-    isTakingPhotos = true;
+  onDestroy(() => {
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+      stream = null;
+    }
+    clearInterval(autoContinueTimer);
+  });
 
-    while (photos.length < framesCount) photos.push(null);
-    if (photos.length > framesCount) photos = photos.slice(0, framesCount);
+  // --- SESSION FUNCTIONS ---
+  async function startSession() {
+    sessionStarted = true;
+    isLoading = false;
+    currentFrame = 0;
+    photos = Array(framesCount).fill(null);
+    framesCount = frameLayout.count || 4;
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });
 
-    for (let i = 0; i < framesCount; i++) {
-      if (photos[i]) continue;
+    if (video) {
+      video.srcObject = stream;
+      video.play();
 
-      countdown = 5;
-      while (countdown > 0) {
-        await new Promise((r) => setTimeout(r, 1000));
-        countdown -= 1;
-      }
+      canvas.width = video.videoWidth || 1024;
+      canvas.height = video.videoHeight || 768;
+    }
+    isCameraOn = true;
 
-      const ctx = canvas.getContext("2d");
-      ctx.filter = filterPresets[selectedFilter] || "";
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL("image/png");
+    takeFrame(currentFrame);
+  }
 
-      photos = photos.map((p, idx) => (idx === i ? dataUrl : p));
-      photosStore.set(photos); // **update store tiap foto**
+  async function takeFrame(index, loop = true) {
+    isTakingPhoto = true;
+    captureCountdown = 3;
+
+    console.log(canvas.width, canvas.height);
+    while (captureCountdown > 0) {
+      await new Promise((r) => setTimeout(r, 1000));
+      captureCountdown -= 1;
     }
 
-    isTakingPhotos = false;
-    countdown = 0;
-  }
-
-  function resetPhoto(index) {
-    photos = photos.map((p, i) => (i === index ? null : p));
-    photosStore.set(photos); // **update store**
-  }
-
-  function resetAllPhotos() {
-    photos = [];
-    photosStore.set(photos); // **update store**
-  }
-
-  function goToPreview() {
-    if (photos.filter((p) => p).length === 0) {
-      alert("Belum ada foto untuk dipreview!");
+    showBackground = true;
+    isCameraOn = false;
+    if (!canvas) {
+      console.error("Wait for canvas ready");
       return;
     }
-    photosStore.set(photos);
-    goto("/preview");
+
+    const ctx = canvas.getContext("2d");
+
+    const bgImage = new Image();
+
+    bgImage.src = background;
+    bgImage.onload = () => {
+      ctx.filter = ""; // no filter
+      const videoRatio = video.videoWidth / video.videoHeight; // ratio kamera
+      const targetWidth = 1024;
+      const targetHeight = 768;
+      const targetRatio = targetWidth / targetHeight; // rasio target
+
+      insertVideoCapture({
+        ctx,
+        videoRatio,
+        targetRatio,
+        targetWidth,
+        targetHeight,
+      });
+      insertImageCapture({
+        ctx,
+        videoRatio,
+        targetRatio,
+        targetWidth,
+        targetHeight,
+        bgImage,
+      });
+      const dataUrl = canvas.toDataURL("image/png");
+
+      photoPreview = dataUrl;
+      photos[index] = photoPreview;
+      photosStore.update((state) => {
+        const updatedPhotos = state.photos ? [...state.photos] : [];
+        updatedPhotos[index] = dataUrl;
+        return { ...state, photos: updatedPhotos };
+      });
+      isTakingPhoto = false;
+
+      startAutoContinueTimer();
+    };
+  }
+
+  function insertVideoCapture(options) {
+    const { ctx, videoRatio, targetRatio, targetWidth, targetHeight } = options;
+    let sx, sy, sWidth, sHeight; // area source dari video
+
+    if (videoRatio > targetRatio) {
+      // kamera lebih lebar → crop horizontal
+      sHeight = video.videoHeight;
+      sWidth = sHeight * targetRatio;
+      sx = (video.videoWidth - sWidth) / 2;
+      sy = 0;
+    } else {
+      // kamera lebih tinggi → crop vertical
+      sWidth = video.videoWidth;
+      sHeight = sWidth / targetRatio;
+      sx = 0;
+      sy = (video.videoHeight - sHeight) / 2;
+    }
+    ctx.drawImage(
+      video,
+      sx,
+      sy,
+      sWidth,
+      sHeight,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+  }
+
+  function insertImageCapture(options) {
+    const { ctx, videoRatio, targetRatio, targetWidth, targetHeight, bgImage } =
+      options;
+    const imgEl = document.querySelector("img.background");
+    const scaledHeight =
+      (targetWidth / bgImage.naturalWidth) * bgImage.naturalHeight;
+    const y = targetHeight - scaledHeight;
+
+    console.log(targetHeight, y, scaledHeight);
+
+    ctx.drawImage(bgImage, 0, y, targetWidth, scaledHeight);
+  }
+
+  function startAutoContinueTimer() {
+    clearInterval(autoContinueTimer);
+    autoContinueCountdown = 2;
+
+    autoContinueTimer = setInterval(() => {
+      autoContinueCountdown -= 1;
+      if (autoContinueCountdown <= 0) {
+        clearInterval(autoContinueTimer);
+        acceptPhoto();
+        photoPreview = null;
+      }
+    }, 1000);
+  }
+
+  function acceptPhoto() {
+    clearInterval(autoContinueTimer);
+    if (isRetake) {
+      goNextFrameRetake();
+    } else {
+      goNextFrame();
+    }
+  }
+
+  async function retakePhoto(frameIndex) {
+    if (retakeLimit == 0) {
+      alert("❌ Retake limit reached for this photo!");
+      return;
+    }
+
+    const retakeUsed = retakePhotos.length;
+    retakeLimit -= retakeUsed;
+
+    photos = photos.map((v, i) => {
+      return retakePhotos.includes(i) ? null : v;
+    });
+    isRetake = true;
+    currentFrame = retakePhotos[0];
+    previewResult = false;
+    photos[currentFrame] = null;
+
+    await tick();
+
+    stream = await navigator.mediaDevices.getUserMedia({ video: true });
+
+    if (video) {
+      video.srcObject = stream;
+      video.play();
+
+      canvas.width = video.videoWidth || 1024;
+      canvas.height = video.videoHeight || 768;
+    }
+    isCameraOn = true;
+
+    takeFrame(currentFrame);
+  }
+
+  function goNextFrameRetake() {
+    retakePhotos.shift();
+    if (retakePhotos.length > 0) {
+      currentFrame = retakePhotos[0];
+      takeFrame(currentFrame);
+      isCameraOn = true;
+    } else {
+      previewResult = true;
+      isRetake = false;
+    }
+  }
+
+  function goNextFrame() {
+    if (currentFrame + 1 < framesCount) {
+      currentFrame += 1;
+      photos[currentFrame] = null;
+      isCameraOn = true;
+      takeFrame(currentFrame);
+    } else {
+      previewResult = true;
+      // goto("/preview"); // All frames done
+    }
+  }
+
+  function addRetakePhoto(index) {
+    // find index of this index in the array
+    const existingIndex = retakePhotos.indexOf(index);
+
+    if (existingIndex !== -1) {
+      // already exists → remove it
+      retakePhotos = retakePhotos.filter((i) => i !== index);
+    } else {
+      // doesn’t exist → add it (if under 2)
+      if (retakePhotos.length < retakeLimit) {
+        retakePhotos = [...retakePhotos, index]; // reassign for reactivity
+        retakePhotos = retakePhotos.slice(0, 2);
+      }
+    }
   }
 </script>
 
-<h2>🎥 Photobooth Aktif</h2>
+<!-- VIDEO / CAPTURE -->
 
-<video bind:this={video} style="filter: {filterPresets[selectedFilter] || ''}"
-></video>
-<canvas bind:this={canvas} width="400" height="300" style="display: none;"
-></canvas>
-
-<label for="filter">🎨 Pilih Filter:</label>
-<select id="filter" bind:value={selectedFilter} disabled={isTakingPhotos}>
-  {#each Object.keys(filterPresets) as key}
-    <option value={key}>{key}</option>
-  {/each}
-</select>
-
-<label for="frames">Jumlah Bingkai:</label>
-<select id="frames" bind:value={framesCount} disabled={isTakingPhotos}>
-  <option value="1">1</option>
-  <option value="2">2</option>
-  <option value="3">3</option>
-  <option value="4">4</option>
-</select>
-
-<button on:click={takePhotos} disabled={isTakingPhotos}>
-  {#if isTakingPhotos}
-    Mengambil Foto...
-  {:else}
-    📸 Ambil Foto
-  {/if}
-</button>
-
-{#if countdown > 0}
-  <div class="countdown">{countdown}</div>
-{/if}
-
-{#if photos.length > 0}
-  <h3>🖼️ Hasil Foto ({photos.filter((p) => p).length} bingkai)</h3>
-  <button on:click={resetAllPhotos} style="margin-bottom: 1rem;"
-    >🗑️ Reset Semua Foto</button
-  >
-  <div style="display: flex; flex-wrap: wrap;">
-    {#each photos as photo, idx (idx)}
-      {#if photo}
-        <div class="photo-container">
-          <img class="photo-result" src={photo} alt={`Foto ${idx + 1}`} />
-          <button class="reset-button" on:click={() => resetPhoto(idx)}
-            >✖</button
+<canvas bind:this={canvas} style="display:none;"></canvas>
+{#if !isLoading}
+  {#if previewResult && frameLayout}
+    <!-- SESSION SETUP -->
+    <div class="flex flex-wrap w-full">
+      <div
+        class="flex justify-center md:items-center overflow-hidden flex-shrink-0 w-2/4 rounded-4xl my-auto"
+      >
+        <div class="p-10 bg-emerald-400 rounded-2xl">
+          <div
+            id="frame"
+            class="frame relative shadow-lg overflow-hidden object-contain"
+            style="height:{frameLayout.height}px;width:{frameLayout.width}px"
+            px
           >
-        </div>
-      {/if}
-    {/each}
-
-    {#if isTakingPhotos && countdown > 0}
-      <div class="photo-container">
-        <div
-          class="photo-result"
-          style="background: #ddd; border: 2px dashed #666; display: flex; align-items: center; justify-content: center; color: #666; font-weight: bold;"
-        >
-          Foto berikutnya...
+            <img src={frameLayout.src} class="absolute z-10 h-full" />
+            {#each frameOptions || [] as t, i}
+              <div
+                class="absolute overflow-hidden shadow flex items-center justify-center {t.image}"
+                style="left:{t.x}px; top:{t.y}px; width:{t.w}px; height:{t.h}px;"
+              >
+                <img
+                  src={photos[t.image - 1] ||
+                    "photo-1606107557195-0e29a4b5b4aa.webp"}
+                  alt={`Foto ${i}`}
+                  class="h-full w-full object-cover"
+                  crossorigin="anonymous"
+                />
+              </div>
+            {/each}
+          </div>
         </div>
       </div>
-    {/if}
+      <div
+        class="flex justify-center md:items-center overflow-hidden flex-shrink-0 w-2/4 my-auto"
+      >
+        <div
+          class="bg-emerald-200 rounded-2xl w-full flex flex-col p-10"
+          style="height:600px"
+        >
+          <div class="flex flex-wrap gap-2 w-full">
+            {#each photos as photo, i}
+              <div
+                class="p-5 w-[200px] h-[150px] cursor-pointer p-2
+              {retakePhotos.includes(i) ? 'bg-amber-200' : 'bg-amber-50'}"
+                aria-roledescription="select frame"
+                on:click={() => {
+                  addRetakePhoto(i);
+                }}
+              >
+                <img
+                  class="h-full w-full object-cover"
+                  src={photo}
+                  alt="Foto 0"
+                />
+              </div>
+            {/each}
+          </div>
+          <div class="mt-auto ml-auto">
+            {#if retakePhotos.length > 0 && retakeLimit >= retakePhotos.length}
+              <button
+                type="button"
+                class="btn btn-primary"
+                on:click={retakePhoto}>Retake Photo</button
+              >
+            {/if}
+            <button
+              type="button"
+              class="btn btn-neutral"
+              on:click={() => goto("/preview")}>Selanjutnya</button
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+  {:else}
+    <div
+      class="relative mx-auto my-auto aspect-video rounded-lg overflow-hidden relative w-[1024px] h-[768px]"
+      class:hidden={!isCameraOn}
+    >
+      <video bind:this={video} autoplay playsinline muted class="w-full h-full"
+      ></video>
+      {#if video}
+        <img
+          src={background}
+          alt=""
+          class="absolute bottom-0 start-0 background"
+        />
+      {/if}
+      {#if isTakingPhoto && captureCountdown > 0}
+        <div
+          class="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-6xl font-bold z-10"
+        >
+          {captureCountdown}
+        </div>
+      {/if}
+    </div>
+    <span
+      class="loading text-center mx-auto"
+      class:hidden={isCameraOn || photoPreview}
+    ></span>
+  {/if}
+
+  <!-- PHOTO PREVIEW AFTER CAPTURE -->
+  {#if photoPreview && !previewResult}
+    <div class="mt-6 w-[1024px] h-[768px] mx-auto text-center">
+      {#if autoContinueCountdown > 0}
+        <p class="text-red-600 font-bold mb-2">
+          ⏳ Auto lanjut dalam {autoContinueCountdown}s...
+        </p>
+      {/if}
+
+      {#if showBackground}
+        <img
+          src={photoPreview}
+          alt={`Foto ${currentFrame + 1}`}
+          class="mx-auto my-3 rounded shadow-md object-cover w-full"
+        />
+      {/if}
+
+      <p class="mb-2 text-sm text-gray-600">
+        Foto {currentFrame + 1} dari {framesCount}
+      </p>
+    </div>
+  {/if}
+{:else}
+  <div class="w-full my-auto text-center">
+    <span class="loading"></span>
   </div>
 {/if}
-
-<!-- Tambahkan tombol ke preview -->
-<button
-  on:click={goToPreview}
-  style="margin-top: 1rem; padding: 0.5rem 1rem; font-size: 1rem;"
->
-  ➡️ Lihat Preview
-</button>
-
-<style>
-  /* tetap sama */
-</style>
