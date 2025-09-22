@@ -6,7 +6,6 @@
 
   function handleClick() {
     selected = !selected;
-    alert("test");
     if (onSelect) {
       onSelect({ photoType, selected });
     }

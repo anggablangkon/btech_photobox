@@ -14,6 +14,7 @@ export const photosStore = writable({
 export const photoFrame = readable([
   {
     id: 1,
+    ip_id: 1,
     src: "/frame/Green Clean Aesthetic Photostrip.png",
     count: 4,
     width: 200,
@@ -21,6 +22,7 @@ export const photoFrame = readable([
   },
   {
     id: 2,
+    ip_id: 1,
     src: "/frame/frame3.png",
     count: 2,
     width: 400,
@@ -28,6 +30,7 @@ export const photoFrame = readable([
   },
   {
     id: 3,
+    ip_id: 3,
     src: "/frame/Brown and Beige Aesthetic Gradient Elegant Photo Studio Photostrip.png",
     count: 4,
     width: 200,
@@ -35,6 +38,7 @@ export const photoFrame = readable([
   },
   {
     id: 4,
+    ip_id: 3,
     src: "/frame/Styling 1.png",
     count: 4,
     width: 400,

@@ -4,6 +4,7 @@
   import { register } from "swiper/element";
   import { appSettings } from "../stores/appSetting";
 
+
   let title;
   let background = "";
   let isLoading = true;

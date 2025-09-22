@@ -3,16 +3,25 @@
   import { onDestroy, onMount } from "svelte";
   import { photosStore, photoFrame as photoFrames } from "../../stores/photos";
   import { appSettings } from "../../stores/appSetting";
+  import {
+    ArrowLeftCircleIcon,
+    ArrowRightCircleIcon,
+  } from "svelte-feather-icons";
 
   let autoContinueTimer;
   let autoCountdownTimer;
   let swiperEl;
+  let selectedIp;
   let selectedFrame = null;
   let isLoading = true;
   let frames;
   onMount(async () => {
+    photosStore.subscribe((v) => {
+      selectedIp = v.photoIp;
+    });
+
     photoFrames.subscribe((v) => {
-      frames = v;
+      frames = v.filter((f) => f.ip_id === selectedIp.id);
       startCountdownTimer();
     });
 
@@ -26,6 +35,13 @@
 
     isLoading = false;
   });
+
+  const prevSlide = () => {
+    swiperEl?.swiper.slidePrev();
+  };
+  const nextSlide = () => {
+    swiperEl?.swiper.slideNext();
+  };
 
   onDestroy(() => {
     clearInterval(autoContinueTimer);
@@ -63,6 +79,21 @@
   <div
     class="h-full mx-auto flex flex-wrap justify-start gap-2 rounded-md overflow-auto"
   >
+    {#if frames && Object.keys(frames).length > 2}
+      <button
+        class="absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-blue-300 .prev-button p-0"
+        on:click={prevSlide}
+      >
+        <ArrowLeftCircleIcon size="32" />
+      </button>
+      <button
+        class="absolute right-0 top-1/2 -translate-y-1/2 rounded-full bg-blue-300 .next-button p-0"
+        on:click={nextSlide}
+      >
+        <ArrowRightCircleIcon size="32" />
+      </button>
+    {/if}
+
     <swiper-container
       bind:this={swiperEl}
       class="mx-auto h-10/12 w-3/4"

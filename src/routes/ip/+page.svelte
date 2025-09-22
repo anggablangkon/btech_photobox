@@ -15,10 +15,10 @@
   let selectedFrame = null;
   let isLoading = true;
   let ips = [
-    { title: "Sheila On 7", img: "/ip/Sheila.png" },
-    { title: "Noah", img: "/ip/noah.jpg" },
-    { title: "Jumbo", img: "/ip/jumbo.jpg" },
-    { title: "One For All", img: "/ip/one_for_all.jpg" },
+    { id: 1, title: "Sheila On 7", img: "/ip/Sheila.png" },
+    { id: 2, title: "Noah", img: "/ip/noah.jpg" },
+    { id: 3, title: "Jumbo", img: "/ip/jumbo.jpg" },
+    { id: 4, title: "One For All", img: "/ip/one_for_all.jpg" },
   ];
   let frames;
   onMount(async () => {
@@ -59,6 +59,7 @@
       if (autoCountdownTimer <= 0) {
         clearInterval(autoContinueTimer);
         const ipRand = ips[Math.floor(Math.random() * ips.length)];
+        console.log(ipRand)
         onSelectIp(ipRand);
       }
     }, 1000);
@@ -102,6 +103,7 @@
         bind:this={swiperEl}
         class="mx-auto h-full w-3/4"
         slides-per-view="2"
+        loop="true"
         space-between="30"
         navigation="true"
       >

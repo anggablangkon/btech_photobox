@@ -143,9 +143,9 @@
       <div class="p-2 w-1/2 flex items-center">
         <div class=" text-center mx-auto p-3">
           <div
-            class="min-h-[450px] border-double border-4 mx-auto w-[400px] bg-white rounded-xl py-1 px-0.5 shadow flex flex-col items-center justify-center"
+            class="min-h-[450px] border-double border-4 border-white mx-auto w-[400px] bg-base-100 rounded-xl shadow flex flex-col items-center justify-center overflow-hidden"
           >
-            {#if qrisImage}
+            {#if qrisImage && timeLeft}
               <img
                 src={qrisImage}
                 alt="object-cover w-full Qris Image"

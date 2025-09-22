@@ -47,12 +47,11 @@
     swiperEl?.swiper.slideNext();
   };
 
-  const goPaymentPage = (photoType) => {
-    selectedType = photoType;
+  const goPaymentPage = (data) => {
+    const { photoType } = data;
     photosStore.update((state) => {
-      return { ...state, photoType: selectedType };
+      return { ...state, photoType: photoType };
     });
-    alert("test");
     goto("/payment");
   };
 </script>
