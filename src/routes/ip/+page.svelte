@@ -2,11 +2,18 @@
   import { goto } from "$app/navigation";
   import { onDestroy, onMount } from "svelte";
   import { photosStore, photoFrame as photoFrames } from "../../stores/photos";
+  import {
+    ArrowLeftCircleIcon,
+    ArrowRightCircleIcon,
+  } from "svelte-feather-icons";
+  import { appSettings } from "../../stores/appSetting";
 
   let selectedType;
   let autoCountdownTimer = null;
+  let swiperEl;
   let autoContinueTimer;
   let selectedFrame = null;
+  let isLoading = true;
   let ips = [
     { title: "Sheila On 7", img: "/ip/Sheila.png" },
     { title: "Noah", img: "/ip/noah.jpg" },
@@ -19,12 +26,29 @@
       frames = v;
     });
 
+    appSettings.update((state) => {
+      return {
+        ...state,
+        backgroundPage: "/background/BACKGROUND 3.jpg",
+        title: "Pilih IP",
+      };
+    });
+
+    isLoading = false;
+
     startCountdownTimer();
   });
 
   onDestroy(() => {
     clearInterval(autoContinueTimer);
   });
+
+  const prevSlide = () => {
+    swiperEl?.swiper.slidePrev();
+  };
+  const nextSlide = () => {
+    swiperEl?.swiper.slideNext();
+  };
 
   function startCountdownTimer() {
     clearInterval(autoContinueTimer);
@@ -49,34 +73,55 @@
   }
 </script>
 
-<div class="w-full overflow-hidden">
+<div class="w-full overflow-hidden relative h-full">
   <div class="flex justify-between">
-    <h1 class="mb-3 font-bold text-xl text-center">Pilih IP</h1>
-    <h1 class="mb-3 font-bold text-xl text-center">
+    <h1
+      class="mb-3 font-bold text-xl text-center p-2 bg-base-300 border border-2 rounded-full"
+    >
       Waktu anda sisa {autoCountdownTimer}
     </h1>
   </div>
+
   {#if ips}
-    <div
-      class="mx-auto flex flex-wrap gap-2 justify-start p-1 h-full overflow-auto"
-    >
-      {#each Object.entries(ips) as [i, ip]}
-        <div
-          class="h-[200px] w-[200px] overflow-hidden"
-          on:click={() => onSelectIp(ip)}
+    <div class="h-10/12 mx-auto">
+      {#if ips.length > 2}
+        <button
+          class="absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-blue-300 .prev-button p-0"
+          on:click={prevSlide}
         >
-          <figure
-            class="h-5/6 border-2 w-full inline-flex overflow-hidden rounded-md shadow-sm"
-          >
-            <img
-              src={ip.img}
-              alt={ip.img}
-              class="object-contain h-full w-full"
-            />
-          </figure>
-          <p class="m-0 text-center pt-2">{ip.title}</p>
-        </div>
-      {/each}
+          <ArrowLeftCircleIcon size="32" />
+        </button>
+        <button
+          class="absolute right-0 top-1/2 -translate-y-1/2 rounded-full bg-blue-300 .next-button p-0"
+          on:click={nextSlide}
+        >
+          <ArrowRightCircleIcon size="32" />
+        </button>
+      {/if}
+      <swiper-container
+        bind:this={swiperEl}
+        class="mx-auto h-full w-3/4"
+        slides-per-view="2"
+        space-between="30"
+        navigation="true"
+      >
+        {#each Object.entries(ips) as [i, ip]}
+          <swiper-slide class="p-10 flex items-center justify-center">
+            <div class="h-3/4">
+              <div
+                class="aspect-square h-full flex flex-col shrink items-center border-double border-8 rounded-2xl bg-blue-50 shadow-md mx-auto text-center"
+                on:click={() => onSelectIp(ip)}
+              >
+                <img
+                  src={ip.img}
+                  alt={ip.img}
+                  class="object-cover h-full w-full"
+                />
+              </div>
+            </div>
+          </swiper-slide>
+        {/each}
+      </swiper-container>
     </div>
   {:else}
     <div class="mx-auto">

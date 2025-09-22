@@ -29,8 +29,10 @@
 		]
 	},
 	"dependencies": {
+		"cors": "^2.8.5",
 		"daisyui": "^5.1.9",
 		"dom-to-image-more": "^3.7.1",
+		"express": "^5.1.0",
 		"file-saver": "^2.0.5",
 		"html2canvas": "^1.4.1",
 		"html2canvas-pro": "^1.5.11",
@@ -38,5 +40,18 @@
 		"konva": "^10.0.1",
 		"qrcode": "^1.5.4",
 		"swiper": "^12.0.1"
-	}
+	},
+	"description": "Sveltekit",
+	"main": "svelte.config.js",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/anggablangkon/btech_photobox.git"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/anggablangkon/btech_photobox/issues"
+	},
+	"homepage": "https://github.com/anggablangkon/btech_photobox#readme"
 }

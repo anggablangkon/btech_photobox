@@ -4,6 +4,7 @@
   import { onDestroy, onMount, tick } from "svelte";
   import { photosStore } from "../../stores/photos";
   import { goto } from "$app/navigation";
+  import { appSettings } from "../../stores/appSetting";
 
   // store references to <audio>
   let audio = [];
@@ -14,6 +15,14 @@
   onMount(async () => {
     isPaused = songLists.map(() => true);
     fadeIntervals = songLists.map(() => true);
+
+    appSettings.update((state) => {
+      return {
+        ...state,
+        backgroundPage: "/background/BACKGROUND 10.jpg",
+        title: "Result",
+      };
+    });
 
     await tick();
     isLoading = false;

@@ -8,6 +8,7 @@
   import { onMount, onDestroy, tick } from "svelte";
   import html2canvas from "html2canvas-pro";
   import { filterPresets } from "$lib/filterPresets.js";
+  import { appSettings } from "../../stores/appSetting.js";
 
   let photos = [];
   let frame;
@@ -34,13 +35,24 @@
     photoOptions.subscribe((v) => {
       frameOption = v[selectedFrameType];
     });
+
+    appSettings.update((state) => {
+      return {
+        ...state,
+        backgroundPage: "/background/BACKGROUND 9.jpg",
+        title: "Select Filter",
+      };
+    });
+
     await tick();
 
     isLoading = false;
     startAutoContinueTimer();
   });
 
-  // ... your existing code ...
+  onDestroy(() => {
+    clearInterval(autoContinueTimer);
+  });
 
   async function downloadImage() {
     // Now capture the frame
@@ -161,10 +173,10 @@
 {#if !isLoading}
   <div class="content h-[80vh] w-full">
     <!-- FRAME -->
-    <div class="flex justify-between ms-auto gap-2 w-full">
+    <div class="flex justify-end ms-auto gap-2 w-full">
       <button
         on:click={finishSessionFilter}
-        class="btn btn-primary"
+        class="btn font-bold p-2 bg-base-100 border border-3 border-b-6 border-base-200 rounded-full px-10 btn-lg"
         class:hidden={finishStatus}
       >
         Finish
@@ -172,13 +184,15 @@
       <!-- 
     <button
       on:click={downloadImage}
-      class="btn btn-primary"
+      class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
       class:hidden={!finishStatus}
     >
       ⬇️ Download Frame
     </button> -->
 
-      <span class="font-bold">
+      <span
+        class="font-bold p-2 bg-base-100 border border-3 border-b-6 border-base-200 rounded-full"
+      >
         Waktu tersisa {autoContinueCountdown} detik lagi
       </span>
     </div>
@@ -188,7 +202,7 @@
         <div
           class="flex justify-center md:items-center overflow-hidden flex-shrink-0 w-1/3 rounded-4xl my-auto"
         >
-          <div class="p-10 bg-emerald-400 rounded-2xl">
+          <div class="p-2 bg-base-200 rounded-md shadow">
             <div
               id="frame"
               class="frame relative bg-white overflow-hidden object-contain"
@@ -236,57 +250,38 @@
         </div>
       {/if}
 
-      <div class="h-[75vh] flex-1 flex flex-col overflow-hidden gap-2 w-full">
-        <div class="py-3 px-2 shadow-md rounded-md bg-base-200 h-3/8">
-          <h5 class="font-bold mb-2 h-1/8">Filter</h5>
-          <div class="flex gap-2 overflow-x-auto h-7/8">
-            {#each Object.entries(filterPresets) as [filterName, filterValue]}
-              <div
-                class={`card w-[180px] h-[180px] flex-shrink-0 cursor-pointer ${
+      <div class="h-[75vh] flex-1 p-5 rounded-xl overflow-hidden gap-2 w-full">
+        <div class="grid grid-cols-3 gap-5 max-h-full overflow-y-auto">
+          {#each Object.entries(filterPresets) as [filterName, filterValue]}
+            <button
+              type="button"
+              class={`w-full flex-shrink-0 cursor-pointer text-center`}
+              on:click={() => (selectedFilter = filterName)}
+            >
+              <figure
+                class={`aspect-square w-8/12 overflow-hidden mx-auto rounded-xl shadow ${
                   selectedFilter === filterName ? "border-2 border-primary" : ""
                 }`}
-                on:click={() => (selectedFilter = filterName)}
               >
-                <figure class="w-full h-full overflow-hidden">
-                  <img
-                    src="https://img.daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.webp"
-                    alt={filterName}
-                    class="object-cover w-full h-full"
-                    style={`filter:${filterValue}`}
-                  />
-                </figure>
-                <div class="card-body p-2">
-                  <h2 class="card-title text-sm">{filterName}</h2>
-                </div>
-              </div>
-            {/each}
-          </div>
-        </div>
-
-        <!-- <div class="flex-1 py-3 px-2 shadow-md rounded-md bg-base-200 h-3/8">
-        <h5 class="font-bold mb-2 h-1/10">Frame Background</h5>
-        <div class="flex overflow-x-auto gap-2 py-2 w-full h-9/10">
-          {#each Object.entries(filterPresets) as [filterName, filterValue]}
-            <div
-              class="card p-2 flex-shrink-0 h-full
-            {selectedFrameFilter === filterName
-                ? 'border-2 border-primary'
-                : ''}"
-              on:click={() => (selectedFrameFilter = filterName)}
-            >
-              <img
-                src="/frame/Styling 1.png"
-                alt="/frame/Styling 1.png"
-                class="object-cover w-full h-11/12"
-                style={`filter:${filterValue}`}
-              />
-              <div class="card-body p-2">
+                <img
+                  src="https://img.daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.webp"
+                  alt={filterName}
+                  class="object-cover w-full h-full"
+                  style={`filter:${filterValue}`}
+                />
+              </figure>
+              <div
+                class={`px-10 py-2 border-3 border-b-6 inline-flex text-xl rounded-full mt-3 shadow ${
+                  selectedFilter === filterName
+                    ? "bg-base-200 border-base-200 text-white"
+                    : "bg-base-100 border-base-200"
+                }`}
+              >
                 <h2 class="card-title text-sm">{filterName}</h2>
               </div>
-            </div>
+            </button>
           {/each}
         </div>
-      </div> -->
       </div>
     </div>
   </div>

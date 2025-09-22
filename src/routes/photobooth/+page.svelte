@@ -6,6 +6,7 @@
     photoOptions,
   } from "../../stores/photos.js";
   import { goto } from "$app/navigation";
+  import { appSettings } from "../../stores/appSetting.js";
   let videos = [];
   let canvas;
 
@@ -48,6 +49,14 @@
       frameOptions = v[selectedFrame];
     });
 
+    appSettings.update((state) => {
+      return {
+        ...state,
+        backgroundPage: "/background/BACKGROUND 8.jpg",
+        title: null,
+      };
+    });
+
     startSession();
   });
 
@@ -83,7 +92,7 @@
   async function takeFrame(index, loop = true) {
     isTakingPhoto = true;
     captureCountdown = 3;
-    
+
     while (captureCountdown > 0) {
       await new Promise((r) => setTimeout(r, 1000));
       captureCountdown -= 1;
@@ -115,7 +124,6 @@
 
     bgImage.src = background;
     bgImage.onload = () => {
-
       insertImageCapture({
         ctx,
         videoRatio,
@@ -245,6 +253,9 @@
       takeFrame(currentFrame);
       isCameraOn = true;
     } else {
+      appSettings.update((state) => {
+        return { ...state, title: "Preview Foto" };
+      });
       previewResult = true;
       isRetake = false;
     }
@@ -285,7 +296,7 @@
 {#if !isLoading}
   {#if previewResult && frameLayout}
     <!-- SESSION SETUP -->
-    <div class="flex flex-wrap w-full">
+    <div class="flex flex-wrap w-full my-auto">
       <div
         class="flex justify-center md:items-center overflow-hidden flex-shrink-0 w-2/4 rounded-4xl my-auto"
       >
@@ -343,13 +354,13 @@
             {#if retakePhotos.length > 0 && retakeLimit >= retakePhotos.length}
               <button
                 type="button"
-                class="btn btn-primary"
+                class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
                 on:click={retakePhoto}>Retake Photo</button
               >
             {/if}
             <button
               type="button"
-              class="btn btn-neutral"
+              class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
               on:click={() => goto("/preview")}>Selanjutnya</button
             >
           </div>
@@ -358,51 +369,71 @@
     </div>
   {:else}
     <div
-      class="relative mx-auto my-auto aspect-video rounded-lg overflow-hidden relative w-[1024px] h-[768px]"
+      class="mx-auto my-auto aspect-video relative w-[1024px] h-[768px]"
       class:hidden={!isCameraOn}
     >
-      <video bind:this={video} autoplay playsinline muted class="w-full h-full"
+      <img
+        src="/TEKS CHEERS PHOTOBOOTH-.png"
+        alt=""
+        width="200px"
+        class="absolute top-[-30px] left-[-30px] z-50"
+      />
+      <video
+        bind:this={video}
+        autoplay
+        playsinline
+        muted
+        class="w-full h-full border-white rounded-3xl"
       ></video>
       {#if video}
         <img
           src={background}
           alt="Background Frame"
-          on:load={() => isCameraOn = true}
+          on:load={() => (isCameraOn = true)}
           class="absolute bottom-0 start-0 background"
         />
       {/if}
       {#if isTakingPhoto && captureCountdown > 0}
         <div
-          class="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-6xl font-bold z-10"
+          class="absolute inset-0 flex items-center justify-center border-4 rounded-3xl border-white p-4 bg-black/50 text-white text-6xl font-bold z-10"
         >
           {captureCountdown}
         </div>
       {/if}
     </div>
     <span
-      class="loading text-center mx-auto"
+      class="loading my-auto text-center mx-auto"
       class:hidden={isCameraOn || photoPreview}
     ></span>
   {/if}
 
   <!-- PHOTO PREVIEW AFTER CAPTURE -->
   {#if photoPreview && !previewResult}
-    <div class="mt-6 w-[1024px] h-[768px] mx-auto text-center">
-      {#if showBackground}
-        <img
-          src={photoPreview}
-          alt={`Foto ${currentFrame + 1}`}
-          class="mx-auto my-3 rounded shadow-md object-cover w-full"
-        />
-      {/if}
-
-      <p class="mb-2 text-sm text-gray-600">
+    <div class="my-auto text-center">
+      <span
+        class="mb-6 text-center p-2 bg-base-100 rounded-full border border-3 border-b-6 text-gray-600"
+      >
         Foto {currentFrame + 1} dari {framesCount}
-      </p>
+      </span>
+      <div class="w-[1024px] h-[768px] mx-auto text-center relative mt-5">
+        <img
+          src="/TEKS CHEERS PHOTOBOOTH-.png"
+          alt=""
+          width="200px"
+          class="absolute top-[-30px] left-[-30px] z-50"
+        />
+        {#if showBackground}
+          <img
+            src={photoPreview}
+            alt={`Foto ${currentFrame + 1}`}
+            class="mx-auto rounded shadow-md object-cover w-full border-4 border-white rounded-2xl"
+          />
+        {/if}
+      </div>
     </div>
   {/if}
 {:else}
-  <div class="w-full my-auto text-center">
+  <div class="my-auto items-center text-center">
     <span class="loading"></span>
   </div>
 {/if}

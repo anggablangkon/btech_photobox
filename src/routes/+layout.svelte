@@ -1,32 +1,52 @@
 <script>
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import "../app.css";
   import { register } from "swiper/element";
+  import { appSettings } from "../stores/appSetting";
 
-  onMount(() => {
+  let title;
+  let background = "";
+  let isLoading = true;
+
+  onMount(async () => {
+    appSettings.subscribe((v) => {
+      title = v.title;
+      background = v.backgroundPage;
+    });
     register();
+    isLoading = false;
+    await tick();
   });
 </script>
 
-<div class="flex flex-col min-h-screen font-sans" data-theme="light">
-  <!-- Fixed header -->
-  <header
-    class="fixed top-0 left-0 w-full h-16 flex items-center justify-center bg-gray-900 text-white text-xl font-bold shadow-md z-50 h-[4rem]"
-  >
-    📸 Photobooth App
-  </header>
-
+<div
+  class="flex flex-col h-screen font-sans overflow-hidden"
+  data-theme="light"
+>
   <!-- Main (always fills screen below header) -->
   <main
-    class="flex flex-col w-full max-w-12xl mx-auto px-10 pt-20 min-h-[calc(100vh-5rem)]"
+    class="size-full max-w-12xl mx-auto px-10 pt-3 overflow-auto z-0"
+    style={`background-image: url('${background}'); background-size: cover; background-position: center;`}
   >
     <!-- Scrollable content -->
-    <div class="flex-grow flex size-full">
+    <div
+      class="flex-grow flex-col flex size-full pt-4 pb-4 h-full"
+      class:hidden={isLoading}
+    >
+      {#if title != null}
+        <span
+          class="p-2 bg-base-100 border-base-200 border-3 border-b-6 rounded-full inline-flex mx-auto px-10 mb-5 text-xl font-bold shadow-2xl"
+        >
+          {title}
+        </span>
+      {/if}
       <slot />
     </div>
+    <div
+      class="flex size-full items-center justify-center"
+      class:hidden={!isLoading}
+    >
+      <span class="loading mx-auto my-auto"></span>
+    </div>
   </main>
-  <!-- Footer always at bottom of main -->
-  <footer class="w-full mt-auto mb-3 text-center text-sm text-gray-500">
-    &copy; {new Date().getFullYear()} - Dibuat dengan SvelteKit
-  </footer>
 </div>

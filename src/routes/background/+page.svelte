@@ -3,6 +3,7 @@
   import { onDestroy, onMount } from "svelte";
   import { photosStore } from "../../stores/photos";
   import { backgroundLists } from "$lib/backgroundLists";
+  import { appSettings } from "../../stores/appSetting";
   let autoContinueTimer;
   let autoCountdownTimer;
   let frames;
@@ -10,17 +11,27 @@
 
   onMount(() => {
     isLoading = false;
+    appSettings.update((state) => {
+      return {
+        ...state,
+        backgroundPage: "/background/BACKGROUND 6.jpg",
+        title: "Pilih Background",
+      };
+    });
+
     startCountdownTimer();
   });
 
   function startCountdownTimer() {
     clearInterval(autoContinueTimer);
-    autoCountdownTimer = 3;
+    autoCountdownTimer = 30;
     autoContinueTimer = setInterval(() => {
       autoCountdownTimer -= 1;
       if (autoCountdownTimer <= 0) {
         clearInterval(autoContinueTimer);
-        const backgroundRand = Math.floor(Math.random() * backgroundLists.length);
+        const backgroundRand = Math.floor(
+          Math.random() * backgroundLists.length
+        );
         const background = backgroundLists.find((v) => (v.id = backgroundRand));
         selectBackground(background.id);
       }
@@ -43,8 +54,9 @@
 {#if !isLoading}
   <div class="w-full block pb-15">
     <div class="flex justify-between">
-      <h1 class="mb-3 font-bold text-xl text-center">Pilih Frame</h1>
-      <h1 class="mb-3 font-bold text-xl text-center">
+      <h1
+        class="mb-3 font-bold text-xl text-center p-2 bg-base-100 border-3 border-b-6 rounded-full"
+      >
         Waktu anda sisa {autoCountdownTimer}
       </h1>
     </div>
@@ -57,7 +69,9 @@
             class="shadow-lg border border-1 border-base-300 w-[300px] h-[200px] flex justify-center"
             on:click={() => selectBackground(frames.id)}
           >
-            <figure class="h-full p-2 overflow-hidden">
+            <figure
+              class="h-full p-2 overflow-hidden border border-double bg-white"
+            >
               <img
                 src={frames.url}
                 alt="/frame/Styling 1.png"
