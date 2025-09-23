@@ -99,7 +99,6 @@
       class="mx-auto h-10/12 w-3/4"
       slides-per-view="2"
       space-between="30"
-      navigation="true"
     >
       {#if frames}
         {#each Object.entries(frames) as [i, frame]}
@@ -109,24 +108,11 @@
               on:click={() => selectFrame(frame.id)}
             >
               <figure class="aspect-[2/3] overflow-hidden flex bg-amber-800">
-                {#if [1, 3].includes(frame.id)}
-                  <img
-                    src={frame.src}
-                    alt="/frame/Styling 1.png"
-                    class="object-cover w-1/2 h-full"
-                  />
-                  <img
-                    src={frame.src}
-                    alt="/frame/Styling 1.png"
-                    class="object-cover w-1/2 h-full"
-                  />
-                {:else}
-                  <img
-                    src={frame.src}
-                    alt="/frame/Styling 1.png"
-                    class="object-cover w-full h-full"
-                  />
-                {/if}
+                <img
+                  src={frame.src}
+                  alt="/frame/Styling 1.png"
+                  class="object-cover w-full h-full"
+                />
               </figure>
             </div>
           </swiper-slide>

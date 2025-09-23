@@ -17,7 +17,7 @@
   let autoContinueTimer = 0;
   let autoContinueCountdown;
   let selectedFilter = "normal";
-  let selectedFrameFilter = "normal";
+  let processSaving = false;
   let finishStatus = false;
   let isLoading = true;
   let selectedFrameType = 1;
@@ -25,7 +25,7 @@
 
   onMount(async () => {
     unsubscribe = photosStore.subscribe((v) => {
-      selectedFrameType = v.frameType || 3;
+      selectedFrameType = v.frameType || 7;
       photos = v.photos || [];
     });
     photoFrame.subscribe((v) => {
@@ -33,7 +33,7 @@
     });
 
     photoOptions.subscribe((v) => {
-      frameOption = v[selectedFrameType];
+      frameOption = v[frame.frame_id];
     });
 
     appSettings.update((state) => {
@@ -45,7 +45,7 @@
     });
 
     await tick();
-
+    console.log(frame);
     isLoading = false;
     startAutoContinueTimer();
   });
@@ -54,25 +54,10 @@
     clearInterval(autoContinueTimer);
   });
 
-  async function downloadImage() {
-    // Now capture the frame
-    const node = document.querySelector(".frame");
-
-    html2canvas(node, {
-      useCORS: true,
-      allowTaint: false,
-      imageTimeout: 3000,
-      scale: 2,
-    }).then((canvas) => {
-      const link = document.createElement("a");
-      link.href = canvas.toDataURL("image/png");
-      link.download = "photobox.png";
-      link.click();
-    });
-  }
-
   async function finishSessionFilter() {
     selectedMenu = "sticker";
+    processSaving = true;
+    const node = document.querySelector(".frame");
     const photoContainers = document.querySelectorAll(
       ".frame div.absolute img"
     );
@@ -122,32 +107,25 @@
               console.warn("Image has no parent node:", img);
               return resolve();
             }
-
-            const dataUrl = canvas.toDataURL("image/png");
-            filteredPhotos[index] = dataUrl;
             img.parentNode.replaceChild(canvas, img);
             resolve();
           };
         });
       })
     );
+    await tick();
 
-    photosStore.update((state) => {
-      return { ...state, filteredPhotos: filteredPhotos };
-    });
-
-    photosStore.subscribe((v) => {
-      console.log(v);
-    });
-    const node = document.querySelector(".frame");
-
+    if (!node) {
+      alert("Frame element not found!");
+      isLoading = false;
+      return;
+    }
     html2canvas(node, {
       useCORS: true,
       allowTaint: false,
-      imageTimeout: 3000,
       scale: 2,
-    }).then((canvas) => {
-      const dataUrl = canvas.toDataURL("img/png", 1.0);
+    }).then((a) => {
+      const dataUrl = a.toDataURL("img/png", 1.0);
       photosStore.update((state) => {
         return { ...state, imageResult: dataUrl };
       });
@@ -178,8 +156,10 @@
         on:click={finishSessionFilter}
         class="btn font-bold p-2 bg-base-100 border border-3 border-b-6 border-base-200 rounded-full px-10 btn-lg"
         class:hidden={finishStatus}
+        disabled={processSaving}
       >
         Finish
+        <span class="loading" class:hidden={!processSaving}></span>
       </button>
       <!-- 
     <button
@@ -200,9 +180,9 @@
     <div class="flex gap-6 p-6 flex-wrap max-h-full">
       {#if frame}
         <div
-          class="flex justify-center md:items-center overflow-hidden flex-shrink-0 w-1/3 rounded-4xl my-auto"
+          class="flex justify-center overflow-hidden flex-shrink-0 w-1/3 rounded-4xl"
         >
-          <div class="p-2 bg-base-200 rounded-md shadow">
+          <div class="p-2 bg-base-200 rounded-md shadow h-min shadow-xl">
             <div
               id="frame"
               class="frame relative bg-white overflow-hidden object-contain"
@@ -250,17 +230,19 @@
         </div>
       {/if}
 
-      <div class="h-[75vh] flex-1 p-5 rounded-xl overflow-hidden gap-2 w-full">
+      <div class="h-[75vh] flex-1 rounded-xl overflow-hidden gap-2 w-full">
         <div class="grid grid-cols-3 gap-5 max-h-full overflow-y-auto">
           {#each Object.entries(filterPresets) as [filterName, filterValue]}
             <button
               type="button"
-              class={`w-full flex-shrink-0 cursor-pointer text-center`}
+              class={`w-full flex-shrink-0 cursor-pointer text-center p-3`}
               on:click={() => (selectedFilter = filterName)}
             >
               <figure
                 class={`aspect-square w-8/12 overflow-hidden mx-auto rounded-xl shadow ${
-                  selectedFilter === filterName ? "border-2 border-primary" : ""
+                  selectedFilter === filterName
+                    ? "border-4 border-base-200"
+                    : ""
                 }`}
               >
                 <img

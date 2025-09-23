@@ -3,7 +3,6 @@
   import { onMount, tick } from "svelte";
   import { photosStore, resetPhotoStore } from "../../stores/photos.js";
   import { appSettings } from "../../stores/appSetting.js";
-  import timeline from "daisyui/components/timeline/index.js";
 
   let photoType;
   let qrisImage = "";
@@ -142,19 +141,23 @@
       </div>
       <div class="p-2 w-1/2 flex items-center">
         <div class=" text-center mx-auto p-3">
-          <div
-            class="min-h-[450px] border-double border-4 border-white mx-auto w-[400px] bg-base-100 rounded-xl shadow flex flex-col items-center justify-center overflow-hidden"
-          >
-            {#if qrisImage && timeLeft}
+          {#if qrisImage && timeLeft}
+            <div
+              class="h-min border-double border-4 border-white mx-auto w-[400px] bg-base-100 rounded-xl shadow flex flex-col items-center justify-center overflow-hidden"
+            >
               <img
                 src={qrisImage}
                 alt="object-cover w-full Qris Image"
                 srcset={qrisImage}
               />
-            {:else}
+            </div>
+          {:else}
+           <div
+              class="min-h-[350px] border-double border-4 border-white mx-auto w-[400px] bg-base-100 rounded-xl shadow flex flex-col items-center justify-center overflow-hidden"
+            >
               <span class="loading"> </span>
-            {/if}
-          </div>
+            </div>
+          {/if}
           {#if timeLeft}
             <p class="mx-auto my-5 font-bold">
               Waktu pembayaran {timeLeft}

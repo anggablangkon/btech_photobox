@@ -1,9 +1,8 @@
 <script>
   import { onMount, tick } from "svelte";
   import "../app.css";
-  import { register } from "swiper/element";
+  import { register } from "swiper/element/bundle";
   import { appSettings } from "../stores/appSetting";
-
 
   let title;
   let background = "";

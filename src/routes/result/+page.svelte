@@ -11,7 +11,7 @@
   let audio;
   let swiperEl;
   let selectedSong;
-  let images;
+  let images = [];
   let autoContinueTimer = 0;
   let autoContinueCountdown;
   let QrImage;
@@ -21,7 +21,7 @@
     photosStore.subscribe((v) => {
       resultPhoto = v.imageResult;
       selectedFrame = v.frameType;
-      selectedSong = v.selectedSong;
+      selectedSong = v.selectedSong || null;
       images = v.photos;
     });
 
@@ -46,16 +46,13 @@
 
     await tick();
 
-    Object.assign(swiperEl, {
-      modules: [Autoplay, EffectFade],
-    });
     swiperEl?.initialize();
-
-    // console.log(swiperEl);
+    // await swiperEl?.update();
     // startAutoContinueTimer();
   });
 
   onDestroy(() => {
+    unsubscribe();
     clearInterval(autoContinueTimer);
     if (selectedSong) {
       audio.pause();
@@ -81,7 +78,7 @@
               <title>Print</title>
               <style>
                 @page {
-                  size: 4in 6in; /* 4R size */
+                  size: A4; /* 4R size */
                   margin: 0;      /* no margins */
                 }
                 body {
@@ -127,7 +124,7 @@
 
   function finishSession() {
     resetPhotoStore();
-    goto("/", { replaceState: true });
+    goto("/");
   }
 
   function startAutoContinueTimer() {
@@ -150,30 +147,33 @@
       <span
         class="inline-flex font-bold p-2 bg-base-100 border-3 rounded-full absolute top-0 left-0"
       >
-        Waktu tersisa {autoContinueCountdown} detik lagi s
+        Waktu tersisa {autoContinueCountdown} detik lagi
       </span>
-      <div class="w-2/3 h-[75%] bg-base-300 flex items-center justify-center">
+      <div class="w-2/3 h-[75%] flex items-center justify-center p-20">
         <swiper-container
+          init="false"
           bind:this={swiperEl}
-          class="w-full"
+          loop="true"
           effect="fade"
-          loop={true}
-          slides-per-view={1}
-          autoplay={{ delay: 3000, disableOnInteraction: false }}
+          autoplay-delay="2000"
+          class="w-full border border-bg-base-200"
         >
-          {#if images}
+          {#if images.length > 0}
             {#each images as v, i}
               <swiper-slide>
                 <img src={v} class="w-full h-full object-cover" />
               </swiper-slide>
             {/each}
           {:else}
-            <swiper-slide>
-              <img
-                src="photo-1606107557195-0e29a4b5b4aa.webp"
-                class="w-full h-full object-cover"
-              />
-            </swiper-slide>{/if}
+            {#each Array(3) as _, i}
+              <swiper-slide>
+                <img
+                  src="/photo-1606107557195-0e29a4b5b4aa.webp"
+                  class="w-full h-full object-cover"
+                />
+              </swiper-slide>
+            {/each}
+          {/if}
         </swiper-container>
       </div>
     </div>
@@ -182,20 +182,7 @@
         class="aspect-[2/3] w-3/6 flex overflow-hidden border-2 border-white rounded-xl"
         id="print-area"
       >
-        {#if [1, 3].includes(selectedFrame)}
-          <img
-            src={resultPhoto}
-            alt="Print"
-            style="width:50%;height:100%;object-fit:cover;"
-          />
-          <img
-            src={resultPhoto}
-            alt="Print"
-            style="width:50%;height:100%;object-fit:cover;"
-          />
-        {:else}
-          <img src={resultPhoto} alt="Print" style="width:100%;height:100%" />
-        {/if}
+        <img src={resultPhoto} alt="Print" style="width:100%;height:100%" />
       </div>
       <div
         class="h-full overflow-hidden flex flex-col items-center justify-center gap-2"

@@ -37,8 +37,9 @@
   let isLoading = true;
   onMount(async () => {
     photosStore.subscribe((v) => {
-      selectedFrame = v.frameType || 1;
-      background = v?.background?.url || "/background/test.png";
+      selectedFrame = v.frameType || 5;
+      background = v?.background.url || null;
+      console.log(background)
     });
 
     photoFrames.subscribe((v) => {
@@ -46,7 +47,7 @@
     });
 
     photoOptions.subscribe((v) => {
-      frameOptions = v[selectedFrame];
+      frameOptions = v[frameLayout.frame_id];
     });
 
     appSettings.update((state) => {
@@ -122,16 +123,31 @@
 
     const bgImage = new Image();
 
-    bgImage.src = background;
-    bgImage.onload = () => {
-      insertImageCapture({
-        ctx,
-        videoRatio,
-        targetRatio,
-        targetWidth,
-        targetHeight,
-        bgImage,
-      });
+    if (background) {
+      bgImage.src = background;
+      bgImage.onload = () => {
+        insertImageCapture({
+          ctx,
+          videoRatio,
+          targetRatio,
+          targetWidth,
+          targetHeight,
+          bgImage,
+        });
+        const dataUrl = canvas.toDataURL("image/png");
+
+        photoPreview = dataUrl;
+        photos[index] = photoPreview;
+        photosStore.update((state) => {
+          const updatedPhotos = state.photos ? [...state.photos] : [];
+          updatedPhotos[index] = dataUrl;
+          return { ...state, photos: updatedPhotos };
+        });
+        isTakingPhoto = false;
+
+        startAutoContinueTimer();
+      };
+    } else {
       const dataUrl = canvas.toDataURL("image/png");
 
       photoPreview = dataUrl;
@@ -144,7 +160,7 @@
       isTakingPhoto = false;
 
       startAutoContinueTimer();
-    };
+    }
   }
 
   function insertVideoCapture(options) {
@@ -185,7 +201,6 @@
       (targetWidth / bgImage.naturalWidth) * bgImage.naturalHeight;
     const y = targetHeight - scaledHeight;
 
-    console.log(targetHeight, y, scaledHeight);
 
     ctx.drawImage(bgImage, 0, y, targetWidth, scaledHeight);
   }
@@ -385,7 +400,7 @@
         muted
         class="w-full h-full border-white rounded-3xl"
       ></video>
-      {#if video}
+      {#if video && background}
         <img
           src={background}
           alt="Background Frame"
