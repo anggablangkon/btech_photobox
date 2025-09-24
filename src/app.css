@@ -1,4 +1,8 @@
 @import "tailwindcss";
+@import 'swiper/css';
+@import 'swiper/css/effect-fade';
+@import 'swiper/css/autoplay';
+
 @plugin "daisyui";
 @plugin "daisyui/theme" {
   name: "light";
@@ -6,7 +10,7 @@
   --color-primary: oklch(70.7% 0.165 254.624);
   --color-secondary: oklch(82.8% 0.111 230.318);
   --color-base-content: oklch(44.3% 0.11 240.79);
-  --color-base-100: oklch(95.6% 0.045 203.388);
-  --color-base-200: oklch(91.7% 0.08 205.041);
+  --color-base-100: oklch(0.8205 0.0818 235.56);
+  --color-base-200: oklch(0.6557 0.0932 244.35);
   --color-base-300: oklch(82.8% 0.111 230.318);
 }
