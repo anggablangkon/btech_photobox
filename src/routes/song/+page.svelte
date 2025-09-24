@@ -3,7 +3,7 @@
   import { songLists } from "$lib/songList";
   import { onDestroy, onMount, tick } from "svelte";
   import { photosStore } from "../../stores/photos";
-  import { goto } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
   import { appSettings } from "../../stores/appSetting";
 
   // store references to <audio>
@@ -14,6 +14,17 @@
   let fadeIntervals;
   let songList;
   let selectedIp;
+
+  afterNavigate(() => {
+    appSettings.update((state) => {
+      return {
+        ...state,
+        backgroundPage: "/background/BACKGROUND 10.jpg",
+        title: "Pilih Lagu",
+      };
+    });
+  });
+
   onMount(async () => {
     photosStore.subscribe((v) => {
       photoData = v;
@@ -22,14 +33,6 @@
     songList = songLists.filter((s) => s.ip_id === photoData.photoIp.id);
     isPaused = songLists.map(() => true);
     fadeIntervals = songLists.map(() => true);
-    // console.log(photoData, songLists);
-    appSettings.update((state) => {
-      return {
-        ...state,
-        backgroundPage: "/background/BACKGROUND 10.jpg",
-        title: "Result",
-      };
-    });
 
     await tick();
     isLoading = false;

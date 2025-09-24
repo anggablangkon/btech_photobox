@@ -4,7 +4,7 @@
   import { Autoplay, EffectFade } from "swiper/modules";
   import QRCode from "qrcode";
   import { appSettings } from "../../stores/appSetting";
-  import { goto } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
 
   let resultPhoto;
   let selectedFrame;
@@ -16,6 +16,16 @@
   let autoContinueCountdown;
   let QrImage;
   let isLoading = true;
+
+  afterNavigate(() => {
+    appSettings.update((state) => {
+      return {
+        ...state,
+        backgroundPage: "/background/BACKGROUND 10.jpg",
+        title: "Result",
+      };
+    });
+  });
 
   onMount(async () => {
     photosStore.subscribe((v) => {
@@ -34,14 +44,6 @@
       .catch((err) => {
         console.error(err);
       });
-
-    appSettings.update((state) => {
-      return {
-        ...state,
-        backgroundPage: "/background/BACKGROUND 10.jpg",
-        title: "Result",
-      };
-    });
     isLoading = false;
 
     await tick();

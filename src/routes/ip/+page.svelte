@@ -1,5 +1,5 @@
 <script>
-  import { goto } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
   import { onDestroy, onMount } from "svelte";
   import { photosStore, photoFrame as photoFrames } from "../../stores/photos";
   import {
@@ -19,17 +19,19 @@
     { id: 3, title: "Jumbo", img: "/ip/jumbo.jpg" },
   ];
   let frames;
-  onMount(async () => {
-    photoFrames.subscribe((v) => {
-      frames = v;
-    });
-
+  afterNavigate(() => {
     appSettings.update((state) => {
       return {
         ...state,
         backgroundPage: "/background/BACKGROUND 3.jpg",
         title: "Pilih IP",
       };
+    });
+  });
+
+  onMount(async () => {
+    photoFrames.subscribe((v) => {
+      frames = v;
     });
 
     isLoading = false;

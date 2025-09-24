@@ -1,5 +1,5 @@
 <script>
-  import { goto } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
   import { onDestroy, onMount } from "svelte";
   import { photosStore, photoFrame as photoFrames } from "../../stores/photos";
   import { appSettings } from "../../stores/appSetting";
@@ -15,6 +15,17 @@
   let selectedFrame = null;
   let isLoading = true;
   let frames;
+
+  afterNavigate(() => {
+    appSettings.update((state) => {
+      return {
+        ...state,
+        backgroundPage: "/background/BACKGROUND 7.jpg",
+        title: "Pilih Frame",
+      };
+    });
+  });
+
   onMount(async () => {
     photosStore.subscribe((v) => {
       selectedIp = v.photoIp;
@@ -24,15 +35,7 @@
       frames = v.filter((f) => f.ip_id === selectedIp.id);
       startCountdownTimer();
     });
-
-    appSettings.update((state) => {
-      return {
-        ...state,
-        backgroundPage: "/background/BACKGROUND 7.jpg",
-        title: "Pilih Frame",
-      };
-    });
-
+    
     isLoading = false;
   });
 

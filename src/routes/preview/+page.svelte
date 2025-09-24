@@ -4,7 +4,7 @@
     photoFrame,
     photoOptions,
   } from "../../stores/photos.js";
-  import { goto } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
   import { onMount, onDestroy, tick } from "svelte";
   import html2canvas from "html2canvas-pro";
   import { filterPresets } from "$lib/filterPresets.js";
@@ -23,6 +23,16 @@
   let selectedFrameType = 1;
   let unsubscribe;
 
+  afterNavigate(() => {
+    appSettings.update((state) => {
+      return {
+        ...state,
+        backgroundPage: "/background/BACKGROUND 9.jpg",
+        title: "Select Filter",
+      };
+    });
+  });
+
   onMount(async () => {
     unsubscribe = photosStore.subscribe((v) => {
       selectedFrameType = v.frameType || 7;
@@ -34,14 +44,6 @@
 
     photoOptions.subscribe((v) => {
       frameOption = v[frame.frame_id];
-    });
-
-    appSettings.update((state) => {
-      return {
-        ...state,
-        backgroundPage: "/background/BACKGROUND 9.jpg",
-        title: "Select Filter",
-      };
     });
 
     await tick();

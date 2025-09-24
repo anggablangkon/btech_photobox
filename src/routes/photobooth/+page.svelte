@@ -5,7 +5,7 @@
     photoFrame as photoFrames,
     photoOptions,
   } from "../../stores/photos.js";
-  import { goto } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
   import { appSettings } from "../../stores/appSetting.js";
   let videos = [];
   let canvas;
@@ -35,11 +35,22 @@
   let isRetake = false;
   let background;
   let isLoading = true;
+
+  afterNavigate(() => {
+    appSettings.update((state) => {
+      return {
+        ...state,
+        backgroundPage: "/background/BACKGROUND 8.jpg",
+        title: null,
+      };
+    });
+  });
+
   onMount(async () => {
     photosStore.subscribe((v) => {
       selectedFrame = v.frameType || 5;
       background = v?.background.url || null;
-      console.log(background)
+      console.log(background);
     });
 
     photoFrames.subscribe((v) => {
@@ -48,14 +59,6 @@
 
     photoOptions.subscribe((v) => {
       frameOptions = v[frameLayout.frame_id];
-    });
-
-    appSettings.update((state) => {
-      return {
-        ...state,
-        backgroundPage: "/background/BACKGROUND 8.jpg",
-        title: null,
-      };
     });
 
     startSession();
@@ -200,7 +203,6 @@
     const scaledHeight =
       (targetWidth / bgImage.naturalWidth) * bgImage.naturalHeight;
     const y = targetHeight - scaledHeight;
-
 
     ctx.drawImage(bgImage, 0, y, targetWidth, scaledHeight);
   }

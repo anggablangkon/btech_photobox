@@ -1,5 +1,5 @@
 <script>
-  import { goto } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
   import { onMount, tick } from "svelte";
   import { photosStore, resetPhotoStore } from "../../stores/photos.js";
   import { appSettings } from "../../stores/appSetting.js";
@@ -10,6 +10,17 @@
   let orderId = "";
   let isLoading = true;
   let expiryTime;
+
+  afterNavigate(() => {
+    appSettings.update((state) => {
+      return {
+        ...state,
+        backgroundPage: "/background/BACKGROUND 2.jpg",
+        title: "Ringkasan Pembayaran",
+      };
+    });
+  });
+
   onMount(async () => {
     photosStore.subscribe((v) => {
       photoType = v.photoType || {
@@ -24,14 +35,6 @@
     if (Object.keys(photoType).length < 1) {
       goto("/");
     }
-
-    appSettings.update((state) => {
-      return {
-        ...state,
-        backgroundPage: "/background/BACKGROUND 2.jpg",
-        title: "Ringkasan Pembayaran",
-      };
-    });
 
     orderId =
       "order_" +
@@ -152,7 +155,7 @@
               />
             </div>
           {:else}
-           <div
+            <div
               class="min-h-[350px] border-double border-4 border-white mx-auto w-[400px] bg-base-100 rounded-xl shadow flex flex-col items-center justify-center overflow-hidden"
             >
               <span class="loading"> </span>

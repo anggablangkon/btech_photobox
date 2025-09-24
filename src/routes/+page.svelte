@@ -1,5 +1,5 @@
 <script>
-  import { goto } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
   import CardProduct from "$lib/components/CardProduct.svelte";
   import { onMount } from "svelte";
   import { photosStore } from "../stores/photos";
@@ -28,7 +28,7 @@
     },
   ];
 
-  onMount(() => {
+  afterNavigate(() => {
     appSettings.update((state) => {
       return {
         ...state,
@@ -36,7 +36,9 @@
         title: "Pilih Produk",
       };
     });
+  });
 
+  onMount(() => {
     isLoading = false;
   });
 

@@ -1,5 +1,5 @@
 <script>
-  import { goto } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
   import { onDestroy, onMount } from "svelte";
   import { photosStore } from "../../stores/photos";
   import { backgroundLists } from "$lib/backgroundLists";
@@ -9,8 +9,7 @@
   let frames;
   let isLoading = true;
 
-  onMount(() => {
-    isLoading = false;
+  afterNavigate(() => {
     appSettings.update((state) => {
       return {
         ...state,
@@ -18,6 +17,10 @@
         title: "Pilih Background",
       };
     });
+  });
+
+  onMount(() => {
+    isLoading = false;
     startCountdownTimer();
   });
 
