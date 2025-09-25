@@ -11,62 +11,6 @@ export const photosStore = writable({
   filteredPhotos: [],
 });
 
-export const photoFrame = readable([
-  {
-    id: 1,
-    ip_id: 1,
-    frame_id: 3,
-    src: "/frame/FRAME_SHEILAON7_1.png",
-    count: 4,
-    width: 400,
-    height: 600,
-  },
-  {
-    id: 2,
-    ip_id: 1,
-    frame_id: 2,
-    src: "/frame/FRAME_JUMBO_2.png",
-    count: 4,
-    width: 400,
-    height: 600,
-  },
-  {
-    id: 3,
-    ip_id: 1,
-    frame_id: 3,
-    src: "/frame/FRAME_JUMBO_3.png",
-    count: 4,
-    width: 400,
-    height: 600,
-  },
-  {
-    id: 5,
-    ip_id: 3,
-    frame_id: 1,
-    src: "/frame/FRAME_JUMBO_1.png",
-    count: 4,
-    width: 400,
-    height: 600,
-  },
-  {
-    id: 6,
-    ip_id: 3,
-    frame_id: 2,
-    src: "/frame/FRAME_JUMBO_2.png",
-    count: 4,
-    width: 400,
-    height: 600,
-  },
-  {
-    id: 7,
-    ip_id: 3,
-    frame_id: 3,
-    src: "/frame/FRAME_JUMBO_3.png",
-    count: 4,
-    width: 400,
-    height: 600,
-  },
-]);
 
 export const photoOptions = writable({
   1: [
@@ -76,7 +20,7 @@ export const photoOptions = writable({
     { image: 4, x: 215, y: 288, w: 160, h: 210 },
   ],
   2: [
-    { image: 1, x: 25, y: 118, w: 160, h: 210 },
+    { image: 1, x: 25, y: 116, w: 160, h: 210 },
     { image: 2, x: 215, y: 36, w: 160, h: 210 },
     { image: 3, x: 25, y: 364, w: 160, h: 210 },
     { image: 4, x: 215, y: 260, w: 160, h: 210 },

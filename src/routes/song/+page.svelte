@@ -1,10 +1,10 @@
 <script>
   import { PauseCircleIcon, PlayCircleIcon } from "svelte-feather-icons";
-  import { songLists } from "$lib/songList";
   import { onDestroy, onMount, tick } from "svelte";
   import { photosStore } from "../../stores/photos";
   import { afterNavigate, goto } from "$app/navigation";
   import { appSettings } from "../../stores/appSetting";
+  import { getSongById } from "$lib/api/songs";
 
   // store references to <audio>
   let audio = [];
@@ -12,7 +12,7 @@
   let isLoading = true;
   let photoData;
   let fadeIntervals;
-  let songList;
+  let songLists;
   let selectedIp;
 
   afterNavigate(() => {
@@ -25,12 +25,11 @@
     });
   });
 
+  $: photoData = $photosStore;
   onMount(async () => {
-    photosStore.subscribe((v) => {
-      photoData = v;
-    });
+    console.log(photoData);
+    songLists = await getSongById(photoData.photoIp.id);
 
-    songList = songLists.filter((s) => s.ip_id === photoData.photoIp.id);
     isPaused = songLists.map(() => true);
     fadeIntervals = songLists.map(() => true);
 
@@ -57,7 +56,7 @@
           isPaused[i] = true;
         } else {
           a.currentTime = 0;
-          a.volume = 0.3;
+          a.volume = 0.15;
           a.play();
           isPaused[i] = false;
         }
@@ -192,22 +191,24 @@
       Skip
     </button>
     <div class="grid grid-cols-3 gap-2 w-full">
-      {#if songList && songList.length === 0}
+      {#if songLists && songLists.length === 0}
         <div class="col-span-3 text-center">
           <p class="text-lg font-bold">No songs available for this IP</p>
         </div>
       {:else}
-        {#each songList as song, i}
+        {#each songLists as song, i}
           <div class="h-40 w-full bg-primary p-3 rounded-md">
             <div class="flex h-full">
               <div class="flex-1 p-3 flex flex-grow flex-col">
-                <p class="font-bold text-xl text-white">{song.singer}</p>
+                <p class="font-bold text-xl text-white">
+                  {song.singer || song.ip.name}
+                </p>
                 <p class="text-white">{song.title}</p>
 
                 <audio
                   class="w-full h-12 rounded-lg bg-gray-800 text-white shadow-lg hidden"
                   bind:this={audio[i]}
-                  src={song.url}
+                  src={song.song_url}
                   on:timeupdate={() => handleTimeUpdate(i)}
                   controls
                   height="20px"

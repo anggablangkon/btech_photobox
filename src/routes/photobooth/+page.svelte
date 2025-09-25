@@ -1,13 +1,9 @@
 <script>
   import { onMount, onDestroy, tick } from "svelte";
-  import {
-    photosStore,
-    photoFrame as photoFrames,
-    photoOptions,
-  } from "../../stores/photos.js";
+  import { photosStore, photoOptions } from "../../stores/photos.js";
   import { afterNavigate, goto } from "$app/navigation";
   import { appSettings } from "../../stores/appSetting.js";
-  let videos = [];
+  import { loadImageWithCORS } from "$lib/helper/image.js";
   let canvas;
 
   // Session state
@@ -46,12 +42,12 @@
     });
   });
   // Ambil value store reactive: $photosStore, $photoFrames, $photoOptions
-  $: background = $photosStore?.background?.url || null;
+  $: background = $photosStore?.background?.image || null;
   $: frameLayout = $photosStore?.frameType;
   $: selectedFrame = $photosStore?.frameType.id || 5;
   $: frameOptions = frameLayout ? $photoOptions?.[frameLayout.frame_id] : null;
   onMount(async () => {
-    console.log($photosStore);
+    console.log(frameOptions, frameLayout);
     startSession();
   });
 
@@ -115,11 +111,11 @@
       targetHeight,
     });
 
-    const bgImage = new Image();
-
     if (background) {
-      bgImage.src = background;
-      bgImage.onload = () => {
+      try {
+        console.log("[PHOTOBOOTH] Loading background image:", background);
+        const bgImage = await loadImageWithCORS(background);
+        console.log(bgImage)
         insertImageCapture({
           ctx,
           videoRatio,
@@ -128,33 +124,32 @@
           targetHeight,
           bgImage,
         });
+
         const dataUrl = canvas.toDataURL("image/png");
-
-        photoPreview = dataUrl;
-        photos[index] = photoPreview;
-        photosStore.update((state) => {
-          const updatedPhotos = state.photos ? [...state.photos] : [];
-          updatedPhotos[index] = dataUrl;
-          return { ...state, photos: updatedPhotos };
-        });
-        isTakingPhoto = false;
-
-        startAutoContinueTimer();
-      };
+        processPhotoCapture(dataUrl, index);
+      } catch (error) {
+        console.error("[PHOTOBOOTH] Background image error:", error);
+        // Continue without background
+        const dataUrl = canvas.toDataURL("image/png");
+        processPhotoCapture(dataUrl, index);
+      }
     } else {
       const dataUrl = canvas.toDataURL("image/png");
 
-      photoPreview = dataUrl;
-      photos[index] = photoPreview;
-      photosStore.update((state) => {
-        const updatedPhotos = state.photos ? [...state.photos] : [];
-        updatedPhotos[index] = dataUrl;
-        return { ...state, photos: updatedPhotos };
-      });
-      isTakingPhoto = false;
-
-      startAutoContinueTimer();
+      processPhotoCapture(dataUrl, index);
     }
+  }
+
+  function processPhotoCapture(dataUrl, index) {
+    photoPreview = dataUrl;
+    photos[index] = photoPreview;
+    photosStore.update((state) => {
+      const updatedPhotos = state.photos ? [...state.photos] : [];
+      updatedPhotos[index] = dataUrl;
+      return { ...state, photos: updatedPhotos };
+    });
+    isTakingPhoto = false;
+    startAutoContinueTimer();
   }
 
   function insertVideoCapture(options) {
@@ -314,10 +309,9 @@
           <div
             id="frame"
             class="frame relative shadow-lg overflow-hidden object-contain"
-            style="height:{frameLayout.height}px;width:{frameLayout.width}px"
-            px
+            style="height:600px;width:400px"
           >
-            <img src={frameLayout.src} class="absolute z-10 h-full" />
+            <img src={frameLayout.image} class="absolute z-10 h-full" />
             {#each frameOptions || [] as t, i}
               <div
                 class="absolute overflow-hidden shadow flex items-center justify-center {t.image}"

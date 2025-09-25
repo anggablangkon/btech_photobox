@@ -1,23 +1,20 @@
 <script>
   import { afterNavigate, goto } from "$app/navigation";
   import { onDestroy, onMount } from "svelte";
-  import { photosStore, photoFrame as photoFrames } from "../../stores/photos";
+  import { photosStore } from "../../stores/photos";
   import {
     ArrowLeftCircleIcon,
     ArrowRightCircleIcon,
   } from "svelte-feather-icons";
   import { appSettings } from "../../stores/appSetting";
+  import { getIps } from "$lib/api/ips";
 
   let selectedType;
   let autoCountdownTimer = null;
   let swiperEl;
   let autoContinueTimer;
-  let selectedFrame = null;
+  let ips = null;
   let isLoading = true;
-  let ips = [
-    { id: 1, title: "Sheila On 7", img: "/ip/Sheila.png" },
-    { id: 3, title: "Jumbo", img: "/ip/jumbo.jpg" },
-  ];
 
   afterNavigate(() => {
     appSettings.update((state) => {
@@ -31,8 +28,12 @@
 
   onMount(async () => {
     isLoading = false;
-
-    startCountdownTimer();
+    try {
+      ips = await getIps();
+    } catch (error) {
+      console.error("Error loading frames:", error);
+    }
+    // startCountdownTimer();
   });
 
   onDestroy(() => {
@@ -104,16 +105,16 @@
         {#each Object.entries(ips) as [i, ip]}
           <swiper-slide class="p-10 flex items-center justify-center">
             <div class="h-3/4">
-              <div
+              <button
                 class="aspect-square h-full flex flex-col shrink items-center border-double border-8 rounded-2xl bg-blue-50 shadow-md mx-auto text-center"
                 on:click={() => onSelectIp(ip)}
               >
                 <img
-                  src={ip.img}
-                  alt={ip.img}
+                  src={ip.image}
+                  alt={ip.image}
                   class="object-cover h-full w-full"
                 />
-              </div>
+              </button>
             </div>
           </swiper-slide>
         {/each}

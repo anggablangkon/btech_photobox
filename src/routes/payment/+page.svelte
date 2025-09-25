@@ -1,6 +1,7 @@
 <script>
   import { afterNavigate, goto } from "$app/navigation";
   import { onDestroy, onMount, tick } from "svelte";
+  import { generateQris, getPaymentStatus } from "$lib/api/payment";
   import { photosStore, resetPhotoStore } from "../../stores/photos.js";
   import { appSettings } from "../../stores/appSetting.js";
 
@@ -39,8 +40,7 @@
   }
 
   onMount(async () => {
-    await createQris();
-    startPaymentStatusCheck();
+    const qris = await createQris();
     isLoading = false;
   });
 
@@ -61,24 +61,14 @@
 
   async function createQris() {
     try {
-      const res = await fetch(
-        "http://localhost:8000/api/payment/photobox/generateQris",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            gross_amount: photoType.price,
-          }),
-        }
-      );
-      const data = await res.json();
+      const data = await generateQris({
+        gross_amount: photoType.price,
+      });
       orderId = data.order_id;
       qrisImage = data.image;
       expiryTime = new Date(data.expiry_time.replace(" ", "T")).getTime();
       startCountdown(expiryTime);
+      startPaymentStatusCheck();
     } catch (error) {
       console.error("Error creating QRIS:", error);
       alert("Gagal membuat kode pembayaran. Silakan coba lagi.");
@@ -126,21 +116,7 @@
     isCheckingPayment = true;
 
     try {
-      const res = await fetch(
-        "http://localhost:8000/api/payment/photobox/getStatus",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            order_id: orderId,
-          }),
-        }
-      );
-      const data = await res.json();
-      console.log(data);
+      const data = await getPaymentStatus(orderId);
       if (data.status === "success") {
         clearAllIntervals();
         photosStore.update((state) => {
@@ -150,47 +126,6 @@
       }
     } catch (error) {
       console.error("Error auto-checking payment status:", error);
-    } finally {
-      isCheckingPayment = false;
-    }
-  }
-
-  async function checkStatusPayment() {
-    if (isCheckingPayment) return;
-
-    isCheckingPayment = true;
-
-    try {
-      const res = await fetch(
-        "http://localhost:8000/api/payment/photobox/getStatus",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            order_id: orderId,
-          }),
-        }
-      );
-      const data = await res.json();
-      if (data.status === "success") {
-        clearAllIntervals();
-        photosStore.update((state) => {
-          return { ...state, order_id: data.order_id };
-        });
-        goto("/ip");
-      } else {
-        alert("Pembayaran belum dilakukan");
-      }
-
-      // For testing - remove when API is ready
-      clearAllIntervals();
-      goto("/ip");
-    } catch (error) {
-      console.error("Error checking payment status:", error);
-      alert("Terjadi kesalahan saat memeriksa status pembayaran");
     } finally {
       isCheckingPayment = false;
     }

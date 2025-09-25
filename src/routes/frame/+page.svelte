@@ -1,14 +1,14 @@
 <script>
   import { afterNavigate, goto } from "$app/navigation";
   import { onDestroy, onMount } from "svelte";
-  import { photosStore, photoFrame as photoFrames } from "../../stores/photos";
+  import { photosStore } from "../../stores/photos";
   import { appSettings } from "../../stores/appSetting";
   import {
     ArrowLeftCircleIcon,
     ArrowRightCircleIcon,
   } from "svelte-feather-icons";
+  import { getFrames } from "$lib/api/frame";
 
-  export let data;
   let autoContinueTimer;
   let autoCountdownTimer;
   let swiperEl;
@@ -30,10 +30,9 @@
   $: selectedIp = $photosStore?.photoIp || null;
 
   onMount(async () => {
+    frames = await getFrames({ ip_id: selectedIp.id });
     isLoading = false;
-    console.log(data);
-    frames = data.frames.filter((frame) => frame.ip_id === selectedIp.id);
-    startCountdownTimer();
+    // startCountdownTimer();
   });
 
   const prevSlide = () => {
@@ -79,12 +78,14 @@
   <div class="h-11/12 mx-auto justify-start gap-2 rounded-md relative">
     {#if frames && Object.keys(frames).length > 2}
       <button
+        type="button"
         class="absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-blue-300 .prev-button p-0"
         on:click={prevSlide}
       >
         <ArrowLeftCircleIcon size="32" />
       </button>
       <button
+        type="button"
         class="absolute right-0 top-1/2 -translate-y-1/2 rounded-full bg-blue-300 .next-button p-0"
         on:click={nextSlide}
       >
@@ -100,7 +101,7 @@
       {#if frames}
         {#each Object.entries(frames) as [i, frame]}
           <swiper-slide class="p-5 h-full flex items-center justify-center">
-            <div
+            <button
               class="shadow-lg rounded-xl bg-white border border-1 border-base-300 aspect-[2/3] h-full flex justify-center p-5"
               on:click={() => selectFrame(frame)}
             >
@@ -108,30 +109,31 @@
                 class="aspect-[2/3] h-full overflow-hidden flex bg-amber-800"
               >
                 <img
-                  src={frame.src}
+                  src={frame.image}
                   alt="/frame/Styling 1.png"
                   class="object-cover w-full h-full"
                 />
               </figure>
-            </div>
+            </button>
           </swiper-slide>
         {/each}
       {:else}
-        <div
-          class="w-3/4 h-full shadow-lg border border-1 border-base-300"
-          on:click={() => {
-            const frameRand = Math.floor(Math.random() * frames.length);
-            selectFrame(frames[frameRand].id);
-          }}
-        >
-          <figure class="h-full p-2 border-base-200 shadow overflow-hidden">
-            <img
-              src="/frame/Styling 1.png"
-              alt="/frame/Styling 1.png"
-              class="object-contain w-full h-full"
-            />
-          </figure>
-        </div>
+        <swiper-slide class="p-5 h-full flex items-center justify-center">
+          <div
+            class="shadow-lg rounded-xl bg-white border border-1 border-base-300 aspect-[2/3] h-full flex justify-center p-5"
+            on:click={() => selectFrame(frame)}
+          >
+            <figure
+              class="aspect-[2/3] h-full overflow-hidden flex bg-amber-800"
+            >
+              <img
+                src="/frame/Styling 1.png"
+                alt="/frame/Styling 1.png"
+                class="object-contain w-full h-full"
+              />
+            </figure>
+          </div>
+        </swiper-slide>
       {/if}
     </swiper-container>
   </div>

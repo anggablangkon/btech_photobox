@@ -2,10 +2,12 @@
   import { afterNavigate, goto } from "$app/navigation";
   import { onDestroy, onMount } from "svelte";
   import { photosStore } from "../../stores/photos";
-  import { backgroundLists } from "$lib/backgroundLists";
   import { appSettings } from "../../stores/appSetting";
+  import { getBackgroundById, getBackgroundsByIpId } from "$lib/api/background";
   let autoContinueTimer;
   let autoCountdownTimer;
+  let selectedIp;
+  let backgroundLists = [];
   let isLoading = true;
 
   afterNavigate(() => {
@@ -18,9 +20,14 @@
     });
   });
 
-  onMount(() => {
+  $: selectedIp = $photosStore.photoIp;
+
+  onMount(async () => {
     isLoading = false;
-    startCountdownTimer();
+
+    backgroundLists = await getBackgroundsByIpId(selectedIp.id);
+    console.log(backgroundLists);
+    // startCountdownTimer();
   });
 
   function startCountdownTimer() {
@@ -66,17 +73,17 @@
       class="h-full mx-auto flex flex-wrap justify-start gap-2 rounded-md p-1 overflow-auto"
     >
       {#if backgroundLists}
-        {#each Object.entries(backgroundLists) as [i, frames]}
+        {#each Object.entries(backgroundLists) as [i, background]}
           <div
             class="shadow-lg border border-1 border-base-300 w-[300px] h-[200px] flex justify-center"
-            on:click={() => selectBackground(frames.id)}
+            on:click={() => selectBackground(background.id)}
           >
-            {#if frames.url}
+            {#if background.image}
               <figure
                 class="h-full p-2 overflow-hidden border border-double bg-white"
               >
                 <img
-                  src={frames.url}
+                  src={background.image}
                   alt="/frame/Styling 1.png"
                   class="object-cover h-full"
                 />

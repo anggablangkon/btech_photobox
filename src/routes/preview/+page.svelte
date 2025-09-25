@@ -177,12 +177,12 @@
             <div
               id="frame"
               class="frame relative bg-white overflow-hidden object-contain"
-              style="height:{frame.height}px;width:{frame.width}px;"
+              style="height:600px;width:400px;"
               on:click={deselectSticker}
             >
               <img
-                src={frame.src}
-                class="absolute z-10 h-full w-[{frame.width}px] frame"
+                src={frame.image}
+                class="absolute z-10 h-full w-[400px] frame"
               />
               {#each frameOptions || [] as t, i}
                 {#if photos[t.image - 1]}
