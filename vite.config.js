@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": "http://localhost:3000", // forward /api to express
+      "/storage": "http://localhost:8000", // forward /storage to express
       "/uploads": "http://localhost:8000", // forward /storage to express
     },
   },
