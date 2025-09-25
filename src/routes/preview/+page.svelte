@@ -1,9 +1,5 @@
 <script>
-  import {
-    photosStore,
-    photoFrame,
-    photoOptions,
-  } from "../../stores/photos.js";
+  import { photosStore, photoOptions } from "../../stores/photos.js";
   import { afterNavigate, goto } from "$app/navigation";
   import { onMount, onDestroy, tick } from "svelte";
   import html2canvas from "html2canvas-pro";
@@ -12,7 +8,7 @@
 
   let photos = [];
   let frame;
-  let frameOption;
+  let frameOptions;
   let selectedMenu = "filter";
   let autoContinueTimer = 0;
   let autoContinueCountdown;
@@ -21,7 +17,6 @@
   let finishStatus = false;
   let isLoading = true;
   let selectedFrameType = 1;
-  let unsubscribe;
 
   afterNavigate(() => {
     appSettings.update((state) => {
@@ -33,22 +28,15 @@
     });
   });
 
+  $: photos = $photosStore?.photos || [];
+  $: selectedFrameType = $photosStore?.frameType.id;
+  $: frame = $photosStore?.frameType;
+  $: frameOptions = frame ? $photoOptions?.[frame.frame_id] : null;
+
   onMount(async () => {
-    unsubscribe = photosStore.subscribe((v) => {
-      selectedFrameType = v.frameType || 7;
-      photos = v.photos || [];
-    });
-    photoFrame.subscribe((v) => {
-      frame = v.find((frame) => frame.id == selectedFrameType);
-    });
-
-    photoOptions.subscribe((v) => {
-      frameOption = v[frame.frame_id];
-    });
-
     await tick();
-    console.log(frame);
     isLoading = false;
+    console.log(photos, photoOptions);
     startAutoContinueTimer();
   });
 
@@ -57,6 +45,7 @@
   });
 
   async function finishSessionFilter() {
+    clearInterval(autoContinueTimer);
     selectedMenu = "sticker";
     processSaving = true;
     const node = document.querySelector(".frame");
@@ -195,7 +184,7 @@
                 src={frame.src}
                 class="absolute z-10 h-full w-[{frame.width}px] frame"
               />
-              {#each frameOption || [] as t, i}
+              {#each frameOptions || [] as t, i}
                 {#if photos[t.image - 1]}
                   <div
                     class="absolute overflow-hidden shadow flex items-center justify-center {t.image}"

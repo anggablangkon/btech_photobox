@@ -8,6 +8,7 @@
     ArrowRightCircleIcon,
   } from "svelte-feather-icons";
 
+  export let data;
   let autoContinueTimer;
   let autoCountdownTimer;
   let swiperEl;
@@ -26,17 +27,13 @@
     });
   });
 
-  onMount(async () => {
-    photosStore.subscribe((v) => {
-      selectedIp = v.photoIp;
-    });
+  $: selectedIp = $photosStore?.photoIp || null;
 
-    photoFrames.subscribe((v) => {
-      frames = v.filter((f) => f.ip_id === selectedIp.id);
-      startCountdownTimer();
-    });
-    
+  onMount(async () => {
     isLoading = false;
+    console.log(data);
+    frames = data.frames.filter((frame) => frame.ip_id === selectedIp.id);
+    startCountdownTimer();
   });
 
   const prevSlide = () => {
@@ -59,14 +56,14 @@
         clearInterval(autoContinueTimer);
         const frameRand = Math.floor(Math.random() * frames.length);
         selectedFrame = frames[frameRand];
-        selectFrame(selectedFrame.id);
+        selectFrame(selectedFrame);
       }
     }, 1000);
   }
 
-  function selectFrame(i) {
+  function selectFrame(frame) {
     photosStore.update((state) => {
-      return { ...state, frameType: i };
+      return { ...state, frameType: frame };
     });
 
     goto("/background");
@@ -79,9 +76,7 @@
   >
     Waktu anda sisa {autoCountdownTimer}
   </h1>
-  <div
-    class="h-full mx-auto flex flex-wrap justify-start gap-2 rounded-md overflow-auto"
-  >
+  <div class="h-11/12 mx-auto justify-start gap-2 rounded-md relative">
     {#if frames && Object.keys(frames).length > 2}
       <button
         class="absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-blue-300 .prev-button p-0"
@@ -96,10 +91,9 @@
         <ArrowRightCircleIcon size="32" />
       </button>
     {/if}
-
     <swiper-container
       bind:this={swiperEl}
-      class="mx-auto h-10/12 w-3/4"
+      class="h-full mx-auto w-3/4"
       slides-per-view="2"
       space-between="30"
     >
@@ -107,10 +101,12 @@
         {#each Object.entries(frames) as [i, frame]}
           <swiper-slide class="p-5 h-full flex items-center justify-center">
             <div
-              class="shadow-lg rounded-xl h-full bg-white border border-1 border-base-300 aspect-[2/3] flex justify-center p-5"
-              on:click={() => selectFrame(frame.id)}
+              class="shadow-lg rounded-xl bg-white border border-1 border-base-300 aspect-[2/3] h-full flex justify-center p-5"
+              on:click={() => selectFrame(frame)}
             >
-              <figure class="aspect-[2/3] overflow-hidden flex bg-amber-800">
+              <figure
+                class="aspect-[2/3] h-full overflow-hidden flex bg-amber-800"
+              >
                 <img
                   src={frame.src}
                   alt="/frame/Styling 1.png"

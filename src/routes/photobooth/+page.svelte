@@ -45,22 +45,13 @@
       };
     });
   });
-
+  // Ambil value store reactive: $photosStore, $photoFrames, $photoOptions
+  $: background = $photosStore?.background?.url || null;
+  $: frameLayout = $photosStore?.frameType;
+  $: selectedFrame = $photosStore?.frameType.id || 5;
+  $: frameOptions = frameLayout ? $photoOptions?.[frameLayout.frame_id] : null;
   onMount(async () => {
-    photosStore.subscribe((v) => {
-      selectedFrame = v.frameType || 5;
-      background = v?.background.url || null;
-      console.log(background);
-    });
-
-    photoFrames.subscribe((v) => {
-      frameLayout = v.find((frame) => frame.id === selectedFrame);
-    });
-
-    photoOptions.subscribe((v) => {
-      frameOptions = v[frameLayout.frame_id];
-    });
-
+    console.log($photosStore);
     startSession();
   });
 
@@ -304,6 +295,8 @@
         retakePhotos = retakePhotos.slice(0, 2);
       }
     }
+
+    retakePhotos.sort((a, b) => a - b);
   }
 </script>
 
@@ -317,7 +310,7 @@
       <div
         class="flex justify-center md:items-center overflow-hidden flex-shrink-0 w-2/4 rounded-4xl my-auto"
       >
-        <div class="p-10 bg-emerald-400 rounded-2xl">
+        <div class="p-2 bg-emerald-400 rounded-lg">
           <div
             id="frame"
             class="frame relative shadow-lg overflow-hidden object-contain"
@@ -343,22 +336,36 @@
         </div>
       </div>
       <div
-        class="flex justify-center md:items-center overflow-hidden flex-shrink-0 w-2/4 my-auto"
+        class="flex flex-col justify-center md:items-center overflow-hidden flex-shrink-0 w-2/4 my-auto"
       >
+        <span
+          class="p-2 border-3 border-b-6 bg-base-100 rounded-full border-base-200 my-4"
+        >
+          You can retake up to {retakeLimit} photos
+        </span>
+
         <div
-          class="bg-emerald-200 rounded-2xl w-full flex flex-col p-10"
+          class="bg-emerald-200 rounded-xl w-full flex flex-col p-5"
           style="height:600px"
         >
           <div class="flex flex-wrap gap-2 w-full">
             {#each photos as photo, i}
               <div
-                class="p-5 w-[200px] h-[150px] cursor-pointer p-2
+                class="p-5 w-[200px] h-[150px] cursor-pointer p-2 relative
               {retakePhotos.includes(i) ? 'bg-amber-200' : 'bg-amber-50'}"
                 aria-roledescription="select frame"
                 on:click={() => {
                   addRetakePhoto(i);
                 }}
               >
+                {#if retakePhotos.includes(i)}
+                  <span
+                    class="rounded-full bg-white text-base-300 absolute top-[-5px] end-[-5px] size-7 flex items-center justify-center border-3"
+                  >
+                    {retakePhotos.indexOf(i) + 1}
+                  </span>
+                {/if}
+
                 <img
                   class="h-full w-full object-cover"
                   src={photo}
@@ -367,17 +374,17 @@
               </div>
             {/each}
           </div>
-          <div class="mt-auto ml-auto">
+          <div class="mt-auto mx-auto">
             {#if retakePhotos.length > 0 && retakeLimit >= retakePhotos.length}
               <button
                 type="button"
-                class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
+                class="btn btn-lg bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
                 on:click={retakePhoto}>Retake Photo</button
               >
             {/if}
             <button
               type="button"
-              class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
+              class="btn btn-lg bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
               on:click={() => goto("/preview")}>Selanjutnya</button
             >
           </div>
@@ -428,7 +435,7 @@
   {#if photoPreview && !previewResult}
     <div class="my-auto text-center">
       <span
-        class="mb-6 text-center p-2 bg-base-100 rounded-full border border-3 border-b-6 text-gray-600"
+        class="mb-6 text-center p-2 bg-base-100 rounded-full border border-3 border-b-6 border-base-200"
       >
         Foto {currentFrame + 1} dari {framesCount}
       </span>

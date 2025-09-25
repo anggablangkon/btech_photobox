@@ -18,7 +18,7 @@
     { id: 1, title: "Sheila On 7", img: "/ip/Sheila.png" },
     { id: 3, title: "Jumbo", img: "/ip/jumbo.jpg" },
   ];
-  let frames;
+
   afterNavigate(() => {
     appSettings.update((state) => {
       return {
@@ -30,10 +30,6 @@
   });
 
   onMount(async () => {
-    photoFrames.subscribe((v) => {
-      frames = v;
-    });
-
     isLoading = false;
 
     startCountdownTimer();

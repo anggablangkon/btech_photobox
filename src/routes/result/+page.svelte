@@ -1,7 +1,7 @@
 <script>
   import { onDestroy, onMount, tick } from "svelte";
   import { photosStore, resetPhotoStore } from "../../stores/photos";
-  import { Autoplay, EffectFade } from "swiper/modules";
+  import ModalExtraPrint from "$lib/components/modal/ModalExtraPrint.svelte";
   import QRCode from "qrcode";
   import { appSettings } from "../../stores/appSetting";
   import { afterNavigate, goto } from "$app/navigation";
@@ -13,9 +13,12 @@
   let selectedSong;
   let images = [];
   let autoContinueTimer = 0;
+  let isOpen = false;
   let autoContinueCountdown;
+  let dataQris = {};
   let QrImage;
   let isLoading = true;
+  let isPrint = false;
 
   afterNavigate(() => {
     appSettings.update((state) => {
@@ -27,14 +30,12 @@
     });
   });
 
-  onMount(async () => {
-    photosStore.subscribe((v) => {
-      resultPhoto = v.imageResult;
-      selectedFrame = v.frameType;
-      selectedSong = v.selectedSong || null;
-      images = v.photos;
-    });
+  $: selectedFrame = $photosStore?.frameType || null;
+  $: resultPhoto = $photosStore?.imageResult || null;
+  $: selectedSong = $photosStore?.selectedSong || null;
+  $: images = $photosStore?.photos || [];
 
+  onMount(async () => {
     QRCode.toDataURL("test", {
       errorCorrectionLevel: "L",
       margin: "2",
@@ -54,12 +55,26 @@
   });
 
   onDestroy(() => {
-    unsubscribe();
     clearInterval(autoContinueTimer);
     if (selectedSong) {
       audio.pause();
     }
   });
+
+  function handlePaymentSuccess() {
+    // Close modal
+    isOpen = false;
+
+    // Clear dataQris to force new generation next time
+    dataQris = {};
+    console.log("dataQris cleared:", dataQris);
+
+    // Trigger print
+    print();
+
+    // Show success message
+    alert("Pembayaran berhasil! Foto tambahan akan dicetak.");
+  }
 
   function timeUpdated(audio) {
     if (audio.currentTime > 15) {
@@ -70,6 +85,7 @@
   }
 
   function print() {
+    isPrint = true;
     const element = document.getElementById("print-area");
     if (element) {
       const printWindow = window.open("", "_blank", "");
@@ -194,11 +210,21 @@
           <img src={QrImage} alt="" />
         </div>
         <div class="inline-flex gap-2">
-          <button
-            type="button"
-            class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
-            on:click={print}>Print</button
-          >
+          {#if !isPrint}
+            <button
+              type="button"
+              class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
+              on:click={print}>Print</button
+            >
+          {:else}
+            <button
+              type="button"
+              class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
+              on:click={() => (isOpen = true)}
+            >
+              Extra Print
+            </button>
+          {/if}
           <button
             type="button"
             class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
@@ -217,6 +243,21 @@
     </div>
   {/if}
 </div>
+
+<ModalExtraPrint
+  bind:isOpen
+  onClose={() => {
+    isOpen = false;
+  }}
+  onUpdateDataQris={(e) => {
+    dataQris = e;
+  }}
+  onPaymentSuccess={() => {
+    handlePaymentSuccess();
+  }}
+  {dataQris}
+/>
+
 {#if selectedSong}
   <audio
     bind:this={audio}

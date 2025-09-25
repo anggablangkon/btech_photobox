@@ -6,7 +6,6 @@
   import { appSettings } from "../../stores/appSetting";
   let autoContinueTimer;
   let autoCountdownTimer;
-  let frames;
   let isLoading = true;
 
   afterNavigate(() => {
@@ -34,8 +33,6 @@
         const backgroundRand =
           backgroundLists[Math.floor(Math.random() * backgroundLists.length)]
             .id;
-        console.log(backgroundLists);
-        console.log(backgroundRand);
         const background = backgroundLists.find((v) => v.id == backgroundRand);
         selectBackground(background.id);
       }
