@@ -4,16 +4,14 @@
   import { generateQris, getPaymentStatus } from "$lib/api/payment";
   import { photosStore, resetPhotoStore } from "../../stores/photos.js";
   import { appSettings } from "../../stores/appSetting.js";
+  import Qris from "$lib/components/QRis.svelte";
 
   let photoType;
   let qrisImage = "";
-  let timeLeft;
   let orderId = "";
   let isLoading = true;
   let expiryTime;
-  let countdownInterval;
-  let paymentCheckInterval;
-  let isCheckingPayment = false;
+  let dataQris = {};
 
   afterNavigate(() => {
     appSettings.update((state) => {
@@ -45,90 +43,102 @@
   });
 
   onDestroy(() => {
-    clearAllIntervals();
+    // clearAllIntervals();
   });
 
-  function clearAllIntervals() {
-    if (countdownInterval) {
-      clearInterval(countdownInterval);
-      countdownInterval = null;
-    }
-    if (paymentCheckInterval) {
-      clearInterval(paymentCheckInterval);
-      paymentCheckInterval = null;
-    }
-  }
+  // function clearAllIntervals() {
+  //   if (countdownInterval) {
+  //     clearInterval(countdownInterval);
+  //     countdownInterval = null;
+  //   }
+  //   if (paymentCheckInterval) {
+  //     clearInterval(paymentCheckInterval);
+  //     paymentCheckInterval = null;
+  //   }
+  // }
 
   async function createQris() {
     try {
       const data = await generateQris({
         gross_amount: photoType.price,
       });
-      orderId = data.order_id;
-      qrisImage = data.image;
-      expiryTime = new Date(data.expiry_time.replace(" ", "T")).getTime();
-      startCountdown(expiryTime);
-      startPaymentStatusCheck();
+
+      dataQris.orderId = data.order_id;
+      dataQris.qrisImage = data.image;
+      dataQris.expiryTime = new Date(
+        data.expiry_time.replace(" ", "T")
+      ).getTime();
     } catch (error) {
       console.error("Error creating QRIS:", error);
       alert("Gagal membuat kode pembayaran. Silakan coba lagi.");
     }
   }
 
-  function startCountdown(expiryTime) {
-    // Clear existing interval
-    if (countdownInterval) {
-      clearInterval(countdownInterval);
-    }
+  // function startCountdown(expiryTime) {
+  //   // Clear existing interval
+  //   if (countdownInterval) {
+  //     clearInterval(countdownInterval);
+  //   }
 
-    countdownInterval = setInterval(() => {
-      const now = Date.now();
-      const distance = expiryTime - now;
+  //   countdownInterval = setInterval(() => {
+  //     const now = Date.now();
+  //     const distance = expiryTime - now;
 
-      if (distance <= 0) {
-        clearInterval(countdownInterval);
-        qrisImage = null;
-        timeLeft = null;
-        createQris();
-      } else {
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-        const paddedSeconds = String(seconds).padStart(2, "0");
-        timeLeft = `${minutes}:${paddedSeconds}`;
-      }
-    }, 1000);
+  //     if (distance <= 0) {
+  //       clearInterval(countdownInterval);
+  //       qrisImage = null;
+  //       timeLeft = null;
+  //       createQris();
+  //     } else {
+  //       const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+  //       const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+  //       const paddedSeconds = String(seconds).padStart(2, "0");
+  //       timeLeft = `${minutes}:${paddedSeconds}`;
+  //     }
+  //   }, 1000);
+  // }
+
+  // function startPaymentStatusCheck() {
+  //   // Generate random interval between 4-7 seconds (4000-7000ms)
+  //   const randomInterval = Math.floor(Math.random() * 3000) + 4000;
+
+  //   paymentCheckInterval = setInterval(async () => {
+  //     if (orderId && !isCheckingPayment) {
+  //       await checkStatusPaymentAuto();
+  //     }
+  //   }, randomInterval);
+  // }
+
+  // async function checkStatusPaymentAuto() {
+  //   if (isCheckingPayment) return;
+
+  //   isCheckingPayment = true;
+
+  //   try {
+  //     const data = await getPaymentStatus(orderId);
+  //     if (data.status === "success") {
+  //       clearAllIntervals();
+  //       photosStore.update((state) => {
+  //         return { ...state, order_id: data.order_id };
+  //       });
+  //       goto("/ip");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error auto-checking payment status:", error);
+  //   } finally {
+  //     isCheckingPayment = false;
+  //   }
+  // }
+
+  function handleExpiredTime(data) {
+    console.log("Payment expired:", data);
+    alert("Payment time expired!");
   }
 
-  function startPaymentStatusCheck() {
-    // Generate random interval between 4-7 seconds (4000-7000ms)
-    const randomInterval = Math.floor(Math.random() * 3000) + 4000;
-
-    paymentCheckInterval = setInterval(async () => {
-      if (orderId && !isCheckingPayment) {
-        await checkStatusPaymentAuto();
-      }
-    }, randomInterval);
-  }
-
-  async function checkStatusPaymentAuto() {
-    if (isCheckingPayment) return;
-
-    isCheckingPayment = true;
-
-    try {
-      const data = await getPaymentStatus(orderId);
-      if (data.status === "success") {
-        clearAllIntervals();
-        photosStore.update((state) => {
-          return { ...state, order_id: data.order_id };
-        });
-        goto("/ip");
-      }
-    } catch (error) {
-      console.error("Error auto-checking payment status:", error);
-    } finally {
-      isCheckingPayment = false;
-    }
+  function handlePaymentSuccess(data) {
+    console.log("Payment successful:", data);
+    // Redirect to success page
+    goto("/ip");
   }
 
   function backToHomePage() {
@@ -167,7 +177,12 @@
         </p>
       </div>
 
-      <div class="p-2 w-1/2 flex items-center">
+      <Qris
+        {dataQris}
+        onExpiredTime={handleExpiredTime}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
+      <!-- <div class="p-2 w-1/2 flex items-center">
         <div class="text-center mx-auto p-3">
           {#if qrisImage && timeLeft}
             <div
@@ -185,25 +200,25 @@
             >
               <span class="loading loading-spinner loading-lg"></span>
             </div>
-          {/if}
+          {/if} -->
 
-          {#if timeLeft}
+      <!-- {#if timeLeft}
             <p class="mx-auto my-5 font-bold">
               Waktu pembayaran {timeLeft}
             </p>
-          {/if}
+          {/if} -->
 
-          <!-- Payment status indicator -->
-          {#if isCheckingPayment}
+      <!-- Payment status indicator -->
+      <!-- {#if isCheckingPayment}
             <p
               class="text-sm text-blue-600 mb-2 flex items-center justify-center gap-2"
             >
               <span class="loading loading-spinner loading-sm"></span>
               Memeriksa status pembayaran...
             </p>
-          {/if}
+          {/if} -->
 
-          <div class="gap-3 mt-5 mx-auto">
+      <!-- <div class="gap-3 mt-5 mx-auto">
             <button
               class="btn bg-base-100 border border-base-200 shadow-xl rounded-full border-3 border-b-6 relative w-full"
               on:click={backToHomePage}
@@ -212,7 +227,7 @@
             </button>
           </div>
         </div>
-      </div>
+      </div> -->
     </div>
   {:else}
     <div class="w-full flex justify-center items-center h-full">

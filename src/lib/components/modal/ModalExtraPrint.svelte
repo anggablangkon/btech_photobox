@@ -1,11 +1,7 @@
 <script>
-  import { form } from "$app/server";
   import { onDestroy } from "svelte";
-  import {
-    generateExtraPrintQris,
-    generateQris,
-    getPaymentStatus,
-  } from "$lib/api/payment.js";
+  import { generateExtraPrintQris, getPaymentStatus } from "$lib/api/payment.js";
+  import Qris from "../Qris.svelte";
 
   export let isOpen = false;
   export let photoType = {
@@ -22,17 +18,12 @@
   export let onUpdateDataQris = (e) => {};
 
   export let dataQris = {};
-  let qrisImage = "";
-  let timeLeft = null;
-  let orderId = "";
+  
   let qty = 0;
   let price = 5000;
   let isLoading = false;
-  let expiryTime;
-  let countdownInterval;
-  let paymentCheckInterval;
-  let isCheckingPayment = false;
-  let qrisExpired = false;
+  let showQris = false;
+  let qrisData = {};
 
   $: {
     if (isOpen) {
@@ -49,63 +40,34 @@
         if (now < existingExpiryTime) {
           // QRIS still valid, use existing data
           console.log("Using existing valid QRIS");
-          qrisImage = dataQris.qrisImage;
-          orderId = dataQris.orderId;
-          expiryTime = existingExpiryTime;
-          qrisExpired = false;
-          startCountdown();
+          qrisData = {
+            qrisImage: dataQris.qrisImage,
+            orderId: dataQris.orderId,
+            expiryTime: dataQris.expiryTime,
+          };
+          showQris = true;
+        } else {
+          // QRIS expired, reset to form view
+          showQris = false;
+          onUpdateDataQris({});
         }
+      } else {
+        showQris = false;
       }
       isLoading = false;
-      startPaymentStatusCheck();
-    } else {
-      // Modal closed, just clear intervals but keep QRIS data
-      clearAllIntervals();
     }
-  }
-
-  function onSubmit() {
-    // Placeholder for form submission if needed
-    const price = parseInt(form.price);
-    const qty = parseInt(form.qty);
-    const total = price * qty;
-    console.log({ price, qty, total });
   }
 
   onDestroy(() => {
-    clearAllIntervals();
+    // Component cleanup handled by Qris component
   });
-
-  function clearAllIntervals() {
-    if (countdownInterval) {
-      clearInterval(countdownInterval);
-      countdownInterval = null;
-    }
-    if (paymentCheckInterval) {
-      clearInterval(paymentCheckInterval);
-      paymentCheckInterval = null;
-    }
-  }
-
-  function cancelIntervals() {
-    if (countdownInterval) {
-      clearInterval(countdownInterval);
-      countdownInterval = null;
-    }
-    if (paymentCheckInterval) {
-      clearInterval(paymentCheckInterval);
-      paymentCheckInterval = null;
-    }
-
-    onUpdateDataQris({});
-  }
 
   async function createExtraPrintQris() {
     if (!isOpen || isLoading || qty <= 0) return;
 
     isLoading = true;
-    qrisExpired = false;
     const totalPrice = qty * parseInt(price);
+    
     try {
       const paymentData = {
         gross_amount: totalPrice,
@@ -124,13 +86,17 @@
         totalPrice: totalPrice,
       };
 
-      // Update local variables
-      orderId = data.order_id;
-      qrisImage = data.image;
-      expiryTime = new Date(data.expiry_time.replace(" ", "T")).getTime();
+      // Update qrisData for Qris component
+      qrisData = {
+        qrisImage: data.image,
+        orderId: data.order_id,
+        expiryTime: data.expiry_time,
+      };
 
       console.log("New QRIS generated:", newDataQris);
-      startCountdown();
+      
+      // Show QRIS component
+      showQris = true;
 
       // Notify parent component about data update
       onUpdateDataQris(newDataQris);
@@ -142,85 +108,38 @@
     }
   }
 
-  function startCountdown() {
-    if (countdownInterval) {
-      clearInterval(countdownInterval);
-    }
-
-    countdownInterval = setInterval(() => {
-      const now = Date.now();
-      const distance = expiryTime - now;
-
-      if (distance <= 0) {
-        clearInterval(countdownInterval);
-        qrisExpired = true;
-        timeLeft = "00:00";
-
-        // Stop payment checking when expired
-        if (paymentCheckInterval) {
-          clearInterval(paymentCheckInterval);
-          paymentCheckInterval = null;
-        }
-        onUpdateDataQris({});
-        console.log("QRIS expired");
-      } else {
-        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-        timeLeft = `${minutes}:${String(seconds).padStart(2, "0")}`;
-      }
-    }, 1000);
+  function handleQrisExpired(data) {
+    console.log("QRIS expired:", data);
+    showQris = false;
+    onUpdateDataQris({});
   }
 
-  function startPaymentStatusCheck() {
-    // Clear existing interval first
-    if (paymentCheckInterval) {
-      clearInterval(paymentCheckInterval);
-    }
-
-    const randomInterval = Math.floor(Math.random() * 3000) + 4000;
-
-    paymentCheckInterval = setInterval(async () => {
-      if (orderId && !isCheckingPayment && isOpen && !qrisExpired) {
-        await checkPaymentStatusAuto();
-      }
-    }, randomInterval);
-  }
-
-  async function checkPaymentStatusAuto() {
-    if (isCheckingPayment || qrisExpired) return;
-
-    isCheckingPayment = true;
-
-    try {
-      const data = await getPaymentStatus(orderId);
-
-      if (data.status === "success") {
-        clearAllIntervals();
-        onPaymentSuccess({
-          orderId: data.order_id,
-          type: "extra_print",
-          qty: qty,
-          totalPrice: qty * parseInt(price),
-        });
-        closeModal();
-      }
-    } catch (error) {
-      console.error("Error auto-checking payment status:", error);
-    } finally {
-      isCheckingPayment = false;
-    }
+  function handlePaymentSuccess(data) {
+    console.log("Payment successful:", data);
+    onPaymentSuccess({
+      orderId: data.order_id || qrisData.orderId,
+      type: "extra_print",
+      qty: dataQris.qty || qty,
+      totalPrice: dataQris.totalPrice || (qty * parseInt(price)),
+      paymentData: data
+    });
+    closeModal();
   }
 
   function refreshQris() {
     console.log("Manual QRIS refresh triggered");
+    showQris = false;
     createExtraPrintQris();
-    startPaymentStatusCheck();
   }
 
   function closeModal() {
-    clearAllIntervals();
-    // Don't clear qrisImage, timeLeft, orderId here - keep the data for reuse
+    showQris = false;
     onClose();
+  }
+
+  function cancelPayment() {
+    showQris = false;
+    onUpdateDataQris({});
   }
 
   function handleBackdropClick(e) {
@@ -263,176 +182,164 @@
 
       <!-- Modal body -->
       <div class="p-6">
-        {#if !isLoading && Object.keys(dataQris).length !== 0}
-          <div class="gap-8 items-center">
-        <!-- QR Code section -->
-        <div class="flex-1">
-          <div class="text-center">
-            {#if qrisImage && timeLeft}
-          <div
-            class="border-4 border-gray-200 rounded-xl p-4 bg-white shadow-lg relative"
-          >
-            <img
-              src={qrisImage}
-              alt="QRIS Payment Code"
-              class="w-full max-w-[300px] mx-auto {qrisExpired
-            ? 'opacity-50'
-            : ''}"
-            />
-            {#if qrisExpired}
-              <div
-            class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded-xl"
-              >
-            <div
-              class="bg-red-600 text-white px-4 py-2 rounded-lg font-bold"
-            >
-              QR Code Expired
-            </div>
+        {#if showQris && qrisData.qrisImage}
+          <!-- QRIS Payment Section -->
+          <div class="text-center mb-6">
+            <h3 class="text-xl font-semibold mb-4">Pembayaran Cetak Tambahan</h3>
+            
+            <!-- Order Summary -->
+            <div class="bg-gray-50 rounded-lg p-4 mb-4 max-w-md mx-auto">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-gray-600">Jumlah Print:</span>
+                <span class="font-bold">{dataQris?.qty || qty} lembar</span>
               </div>
-            {/if}
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-gray-600">Harga per Print:</span>
+                <span>Rp {price.toLocaleString('id-ID')}</span>
+              </div>
+              <div class="flex justify-between items-center border-t pt-2">
+                <span class="text-gray-600 font-semibold">Total:</span>
+                <span class="font-bold text-lg text-blue-600">
+                  Rp {(dataQris?.totalPrice || (qty * price)).toLocaleString('id-ID')}
+                </span>
+              </div>
+            </div>
           </div>
-            {:else}
-          <div
-            class="border-4 border-gray-200 rounded-xl p-4 bg-white shadow-lg min-h-[300px] flex items-center justify-center"
-          >
-            <span class="loading loading-spinner loading-lg"></span>
-          </div>
-            {/if}
 
-            {#if timeLeft}
-          <p
-            class="mt-4 font-bold text-lg {qrisExpired
-              ? 'text-red-600'
-              : ''}"
-          >
-            {#if qrisExpired}
-              QR Code telah kedaluwarsa
-            {:else}
-              Waktu pembayaran {timeLeft}
-            {/if}
-          </p>
-            {/if}
-
-            <p class="text-sm text-gray-700 mt-2">
-          Jumlah Print: {dataQris?.qty}
-            </p>
-            <p class="text-sm text-gray-700 mt-1">
-          Total yang harus dibayar: Rp. {dataQris?.totalPrice}
-            </p>
-
-            <!-- Payment status indicator -->
-            {#if qrisExpired}
-          <p class="text-sm text-red-600 mt-2">
-            ❌ QR Code sudah tidak berlaku
-          </p>
-          <button
-            class="btn bg-blue-600 text-white border border-blue-600 rounded-full px-6 py-2 mt-4 font-semibold hover:bg-blue-700 transition-colors"
-            on:click={refreshQris}
-            disabled={isLoading}
-          >
-            {#if isLoading}
-              <span class="loading loading-spinner loading-sm mr-2"
-              ></span>
-            {/if}
-            🔄 Buat QR Code Baru
-          </button>
-            {:else if isCheckingPayment}
-          <p
-            class="text-sm text-blue-600 mt-2 flex items-center justify-center gap-2"
-          >
-            <span class="loading loading-spinner loading-sm"></span>
-            Memeriksa status pembayaran...
-          </p>
-            {:else}
-          <p class="text-sm text-gray-500 mt-2">
-            ✅ Pembayaran dicek otomatis setiap 4-7 detik
-          </p>
-            {/if}
+          <!-- Integrated Qris Component -->
+          <div class="flex justify-center">
+            <Qris 
+              dataQris={qrisData}
+              onExpiredTime={handleQrisExpired}
+              onPaymentSuccess={handlePaymentSuccess}
+            />
           </div>
-        </div>
+
+          <!-- Action buttons for QRIS view -->
+          <div class="flex justify-center gap-4 mt-6">
+            <button
+              class="btn bg-gray-100 border border-gray-300 rounded-full px-8 py-2 font-semibold hover:bg-gray-200 transition-colors"
+              on:click={closeModal}
+            >
+              Tutup
+            </button>
+            <button
+              class="btn bg-red-100 border border-red-300 text-red-600 rounded-full px-8 py-2 font-semibold hover:bg-red-200 transition-colors"
+              on:click={cancelPayment}
+            >
+              Batal Pembayaran
+            </button>
+            <button
+              class="btn bg-blue-100 border border-blue-300 text-blue-600 rounded-full px-8 py-2 font-semibold hover:bg-blue-200 transition-colors"
+              on:click={refreshQris}
+              disabled={isLoading}
+            >
+              {#if isLoading}
+                <span class="loading loading-spinner loading-sm mr-2"></span>
+              {/if}
+              🔄 Refresh QR Code
+            </button>
           </div>
+
         {:else if !isLoading}
+          <!-- Order Form Section -->
           <form on:submit|preventDefault={createExtraPrintQris}>
-        <p class="m-0">
-          Untuk harga per print dikenakan charge sebesar Rp.{price}
-        </p>
-        <div class="flex items-center gap-4">
-          <label for="qty" class="font-bold">Jumlah:</label>
-          <div class="join">
-            <button
-          type="button"
-          class="btn join-item"
-          on:click={() => {
-            if (qty > 0) qty = qty - 1;
-          }}
-          disabled={isLoading}
-            >
-          -
-            </button>
-            <input
-          type="number"
-          name="qty"
-          bind:value={qty}
-          class="input input-bordered join-item bg-gray-50 w-24 text-center"
-          readonly
-            />
-            <button
-          type="button"
-          class="btn join-item"
-          on:click={() => {
-            qty = qty + 1;
-          }}
-          disabled={isLoading}
-            >
-          +
-            </button>
-          </div>
-        </div>
-        <div class="mt-4">
-          <label for="price" class="font-bold">Total Harga:</label>
-          <div class="join">
-            <input
-          type="text"
-          name="price"
-          value={qty * parseInt(price)}
-          class="input input-bordered bg-gray-50 w-full max-w-xs"
-          readonly
-            />
-          </div>
-        </div>
-        <button
-          type="submit"
-          class="btn bg-blue-600 text-white border border-blue-600 rounded-full px-6 py-2 mt-4 font-semibold hover:bg-blue-700 transition-colors"
-          disabled={isLoading || qty === 0}
-        >
-          {#if isLoading}
-            <span class="loading loading-spinner loading-sm mr-2"></span>
-          {/if}
-          Buat QR Code
-        </button>
+            <div class="space-y-6">
+              <!-- Price Information -->
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p class="text-blue-800 font-semibold mb-2">Informasi Harga</p>
+                <p class="text-blue-700">
+                  Untuk setiap cetak tambahan dikenakan biaya sebesar 
+                  <span class="font-bold">Rp {price.toLocaleString('id-ID')}</span> per lembar
+                </p>
+              </div>
+
+              <!-- Quantity Selector -->
+              <div class="flex items-center justify-between">
+                <label for="qty" class="font-bold text-lg">Jumlah Print:</label>
+                <div class="join">
+                  <button
+                    type="button"
+                    class="btn join-item btn-outline"
+                    on:click={() => {
+                      if (qty > 0) qty = qty - 1;
+                    }}
+                    disabled={isLoading || qty <= 0}
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    name="qty"
+                    bind:value={qty}
+                    class="input input-bordered join-item bg-gray-50 w-24 text-center font-bold text-lg"
+                    min="0"
+                    max="10"
+                  />
+                  <button
+                    type="button"
+                    class="btn join-item btn-outline"
+                    on:click={() => {
+                      if (qty < 10) qty = qty + 1;
+                    }}
+                    disabled={isLoading || qty >= 10}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <!-- Total Price Display -->
+              <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div class="flex justify-between items-center">
+                  <span class="font-bold text-lg">Total yang harus dibayar:</span>
+                  <span class="text-2xl font-bold text-blue-600">
+                    Rp {(qty * parseInt(price)).toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <div class="text-center">
+                <button
+                  type="submit"
+                  class="btn bg-blue-600 text-white border border-blue-600 rounded-full px-8 py-3 text-lg font-semibold hover:bg-blue-700 transition-colors"
+                  disabled={isLoading || qty === 0}
+                >
+                  {#if isLoading}
+                    <span class="loading loading-spinner loading-sm mr-2"></span>
+                    Membuat QR Code...
+                  {:else}
+                    💳 Buat QR Code Pembayaran
+                  {/if}
+                </button>
+              </div>
+
+              {#if qty === 0}
+                <p class="text-center text-gray-500 text-sm">
+                  Silakan pilih jumlah print yang diinginkan
+                </p>
+              {/if}
+            </div>
           </form>
+
         {:else}
-          <div class="flex flex-col items-center">
-        <span class="loading loading-spinner loading-xl"></span>
-        <p class="mt-4 text-gray-600">Membuat kode pembayaran...</p>
+          <!-- Loading State -->
+          <div class="flex flex-col items-center py-12">
+            <span class="loading loading-spinner loading-xl"></span>
+            <p class="mt-4 text-gray-600 text-lg">Membuat kode pembayaran...</p>
           </div>
         {/if}
       </div>
 
-      {#if Object.keys(dataQris).length !== 0}
-        <!-- Modal footer -->
+      {#if !showQris}
+        <!-- Modal footer for form view -->
         <div class="flex justify-center gap-4 p-6 border-t border-gray-200">
           <button
-        class="btn bg-gray-100 border border-gray-300 rounded-full px-8 py-2 font-semibold hover:bg-gray-200 transition-colors"
-        on:click={closeModal}
+            class="btn bg-gray-100 border border-gray-300 rounded-full px-8 py-2 font-semibold hover:bg-gray-200 transition-colors"
+            on:click={closeModal}
           >
-        Batal
-          </button>
-          <button
-        class="btn bg-base-300 text-white border-3 border-b-6 border-base-200 rounded-full px-8 py-2 font-semibold hover:bg-base-200 transition-colors disabled:bg-base-300"
-        on:click={cancelIntervals}
-          >
-        Cancel
+            Batal
           </button>
         </div>
       {/if}
