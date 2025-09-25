@@ -351,8 +351,11 @@
           <div class="flex flex-wrap gap-2 w-full">
             {#each photos as photo, i}
               <div
-                class="p-5 w-[200px] h-[150px] cursor-pointer p-2 relative
-              {retakePhotos.includes(i) ? 'bg-amber-200' : 'bg-amber-50'}"
+                class="w-[200px] h-[150px] cursor-pointer p-2 relative {retakePhotos.includes(
+                  i
+                )
+                  ? 'bg-amber-200'
+                  : 'bg-amber-50'}"
                 aria-roledescription="select frame"
                 on:click={() => {
                   addRetakePhoto(i);

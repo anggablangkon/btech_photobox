@@ -71,9 +71,6 @@
 
     // Trigger print
     print();
-
-    // Show success message
-    alert("Pembayaran berhasil! Foto tambahan akan dicetak.");
   }
 
   function timeUpdated(audio) {
