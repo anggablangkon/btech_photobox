@@ -27,7 +27,7 @@
 
     backgroundLists = await getBackgroundsByIpId(selectedIp.id);
     console.log(backgroundLists);
-    // startCountdownTimer();
+    startCountdownTimer();
   });
 
   function startCountdownTimer() {

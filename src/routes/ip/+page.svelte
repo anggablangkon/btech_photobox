@@ -33,7 +33,7 @@
     } catch (error) {
       console.error("Error loading frames:", error);
     }
-    // startCountdownTimer();
+    startCountdownTimer();
   });
 
   onDestroy(() => {

@@ -32,7 +32,7 @@
   onMount(async () => {
     frames = await getFrames({ ip_id: selectedIp.id });
     isLoading = false;
-    // startCountdownTimer();
+    startCountdownTimer();
   });
 
   const prevSlide = () => {
