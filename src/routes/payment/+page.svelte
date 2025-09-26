@@ -1,5 +1,6 @@
 <script>
   import { afterNavigate, goto } from "$app/navigation";
+  import Loading from "$lib/components/Loading.svelte";
   import { onDestroy, onMount, tick } from "svelte";
   import { generateQris, getPaymentStatus } from "$lib/api/payment";
   import { photosStore, resetPhotoStore } from "../../stores/photos.js";
@@ -7,10 +8,7 @@
   import Qris from "$lib/components/QRis.svelte";
 
   let photoType;
-  let qrisImage = "";
-  let orderId = "";
   let isLoading = true;
-  let expiryTime;
   let dataQris = {};
 
   afterNavigate(() => {
@@ -132,23 +130,21 @@
 
   function handleExpiredTime(data) {
     console.log("Payment expired:", data);
+    createQris();
     alert("Payment time expired!");
   }
 
   function handlePaymentSuccess(data) {
-    console.log("Payment successful:", data);
-    // Redirect to success page
-    goto("/ip");
-  }
-
-  function backToHomePage() {
-    clearAllIntervals();
-    resetPhotoStore();
-    goto("/");
+    if (data.status === "success") {
+      photosStore.update((state) => {
+        return { ...state, order_id: data.order_id };
+      });
+      goto("/ip");
+    }
   }
 </script>
 
-<div class="mx-auto min-w-3/4">
+<div class="mx-auto min-w-3/4 h-full">
   {#if !isLoading}
     <div class="size-full flex justify-center relative mx-auto gap-10">
       <div class="p-2 w-1/2">
@@ -182,56 +178,8 @@
         onExpiredTime={handleExpiredTime}
         onPaymentSuccess={handlePaymentSuccess}
       />
-      <!-- <div class="p-2 w-1/2 flex items-center">
-        <div class="text-center mx-auto p-3">
-          {#if qrisImage && timeLeft}
-            <div
-              class="h-min border-double border-4 border-white mx-auto w-[400px] bg-base-100 rounded-xl shadow flex flex-col items-center justify-center overflow-hidden"
-            >
-              <img
-                src={qrisImage}
-                alt="QRIS Payment Code"
-                class="object-cover w-full"
-              />
-            </div>
-          {:else}
-            <div
-              class="min-h-[350px] border-double border-4 border-white mx-auto w-[400px] bg-base-100 rounded-xl shadow flex flex-col items-center justify-center overflow-hidden"
-            >
-              <span class="loading loading-spinner loading-lg"></span>
-            </div>
-          {/if} -->
-
-      <!-- {#if timeLeft}
-            <p class="mx-auto my-5 font-bold">
-              Waktu pembayaran {timeLeft}
-            </p>
-          {/if} -->
-
-      <!-- Payment status indicator -->
-      <!-- {#if isCheckingPayment}
-            <p
-              class="text-sm text-blue-600 mb-2 flex items-center justify-center gap-2"
-            >
-              <span class="loading loading-spinner loading-sm"></span>
-              Memeriksa status pembayaran...
-            </p>
-          {/if} -->
-
-      <!-- <div class="gap-3 mt-5 mx-auto">
-            <button
-              class="btn bg-base-100 border border-base-200 shadow-xl rounded-full border-3 border-b-6 relative w-full"
-              on:click={backToHomePage}
-            >
-              Kembali
-            </button>
-          </div>
-        </div>
-      </div> -->
     </div>
   {:else}
-    <div class="w-full flex justify-center items-center h-full">
-      <span class="loading loading-dots loading-xl"></span>
-    </div>
+    <Loading text="Waiting for QRIS generated..."></Loading>
   {/if}
 </div>

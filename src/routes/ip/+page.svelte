@@ -1,4 +1,5 @@
 <script>
+  import Loading from "$lib/components/Loading.svelte";
   import { afterNavigate, goto } from "$app/navigation";
   import { onDestroy, onMount } from "svelte";
   import { photosStore } from "../../stores/photos";
@@ -27,12 +28,12 @@
   });
 
   onMount(async () => {
-    isLoading = false;
     try {
       ips = await getIps();
     } catch (error) {
       console.error("Error loading frames:", error);
     }
+    isLoading = false;
     startCountdownTimer();
   });
 
@@ -71,15 +72,15 @@
 </script>
 
 <div class="w-full overflow-hidden relative h-full">
-  <div class="flex justify-between">
-    <h1
-      class="mb-3 font-bold text-xl text-center p-2 bg-base-300 border border-2 rounded-full"
-    >
-      Waktu anda sisa {autoCountdownTimer}
-    </h1>
-  </div>
+  {#if !isLoading}
+    <div class="flex justify-between">
+      <h1
+        class="mb-3 font-bold text-xl text-center p-2 bg-base-300 border border-2 rounded-full"
+      >
+        Waktu anda sisa {autoCountdownTimer}
+      </h1>
+    </div>
 
-  {#if ips}
     <div class="h-10/12 mx-auto">
       {#if ips.length > 2}
         <button
@@ -121,8 +122,6 @@
       </swiper-container>
     </div>
   {:else}
-    <div class="mx-auto">
-      <span class="loading loading-spinner loading-xl"></span>
-    </div>
+    <Loading text="Loading..."></Loading>
   {/if}
 </div>

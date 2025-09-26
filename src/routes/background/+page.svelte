@@ -27,7 +27,7 @@
 
     backgroundLists = await getBackgroundsByIpId(selectedIp.id);
     console.log(backgroundLists);
-    startCountdownTimer();
+    // startCountdownTimer();
   });
 
   function startCountdownTimer() {
@@ -51,11 +51,17 @@
   });
 
   function selectBackground(i) {
-    const background = backgroundLists.find((v) => v.id == i);
+    if (i != null) {
+      const background = backgroundLists.find((v) => v.id == i);
+      photosStore.update((state) => {
+        return { ...state, background: background };
+      });
+    } else {
+      photosStore.update((state) => {
+        return { ...state, background: null };
+      });
+    }
 
-    photosStore.update((state) => {
-      return { ...state, background: background };
-    });
     goto("/photobooth");
   }
 </script>
@@ -72,28 +78,26 @@
     <div
       class="h-full mx-auto flex flex-wrap justify-start gap-2 rounded-md p-1 overflow-auto"
     >
+      <div
+        class="w-[300px] h-[200px] bg-white flex items-center justify-center border-3 rounded-xl"
+        on:click={() => selectBackground(null)}
+      >
+        <span> Tanpa Background </span>
+      </div>
       {#if backgroundLists}
         {#each Object.entries(backgroundLists) as [i, background]}
           <div
-            class="shadow-lg border border-1 border-base-300 w-[300px] h-[200px] flex justify-center"
+            class="w-[300px] h-[200px] bg-white flex items-center justify-center border-3 rounded-xl"
             on:click={() => selectBackground(background.id)}
           >
             {#if background.image}
-              <figure
-                class="h-full p-2 overflow-hidden border border-double bg-white"
-              >
-                <img
-                  src={background.image}
-                  alt="/frame/Styling 1.png"
-                  class="object-cover h-full"
-                />
-              </figure>
+              <img
+                src={background.image}
+                alt="/frame/Styling 1.png"
+                class="object-cover h-full"
+              />
             {:else}
-              <div
-                class="h-full w-full flex items-center justify-center bg-white text-gray-400"
-              >
-                Tanpa Background
-              </div>
+              <span> Tanpa Background </span>
             {/if}
           </div>
         {/each}

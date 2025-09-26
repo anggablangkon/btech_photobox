@@ -11,7 +11,6 @@ export const photosStore = writable({
   filteredPhotos: [],
 });
 
-
 export const photoOptions = writable({
   1: [
     { image: 1, x: 25, y: 42, w: 160, h: 210 },
@@ -34,6 +33,12 @@ export const photoOptions = writable({
     { image: 2, x: 217, y: 185, w: 157, h: 92 },
     { image: 3, x: 217, y: 281, w: 157, h: 92 },
     { image: 4, x: 217, y: 377, w: 157, h: 92 },
+  ],
+  4: [
+    { image: 1, x: 15, y: 101, w: 182, h: 145 },
+    { image: 2, x: 204, y: 101, w: 182, h: 145 },
+    { image: 3, x: 15, y: 252, w: 182, h: 145 },
+    { image: 4, x: 204, y: 252, w: 182, h: 145 },
   ],
 });
 

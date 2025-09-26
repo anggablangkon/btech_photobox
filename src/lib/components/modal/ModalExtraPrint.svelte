@@ -1,6 +1,9 @@
 <script>
   import { onDestroy } from "svelte";
-  import { generateExtraPrintQris, getPaymentStatus } from "$lib/api/payment.js";
+  import {
+    generateExtraPrintQris,
+    getPaymentStatus,
+  } from "$lib/api/payment.js";
   import Qris from "../Qris.svelte";
 
   export let isOpen = false;
@@ -14,11 +17,11 @@
 
   // Modern event handlers
   export let onClose = () => {};
-  export let onPaymentSuccess = () => {};
+  export let onPaymentSuccess = (data) => {};
   export let onUpdateDataQris = (e) => {};
 
   export let dataQris = {};
-  
+
   let qty = 0;
   let price = 5000;
   let isLoading = false;
@@ -67,7 +70,7 @@
 
     isLoading = true;
     const totalPrice = qty * parseInt(price);
-    
+
     try {
       const paymentData = {
         gross_amount: totalPrice,
@@ -94,7 +97,7 @@
       };
 
       console.log("New QRIS generated:", newDataQris);
-      
+
       // Show QRIS component
       showQris = true;
 
@@ -114,14 +117,12 @@
     onUpdateDataQris({});
   }
 
-  function handlePaymentSuccess(data) {
-    console.log("Payment successful:", data);
+  function handlePaymentSuccess() {
     onPaymentSuccess({
-      orderId: data.order_id || qrisData.orderId,
+      invoice_number: dataQris.orderId,
       type: "extra_print",
       qty: dataQris.qty || qty,
-      totalPrice: dataQris.totalPrice || (qty * parseInt(price)),
-      paymentData: data
+      totalPrice: dataQris.totalPrice || qty * parseInt(price),
     });
     closeModal();
   }
@@ -185,8 +186,10 @@
         {#if showQris && qrisData.qrisImage}
           <!-- QRIS Payment Section -->
           <div class="text-center mb-6">
-            <h3 class="text-xl font-semibold mb-4">Pembayaran Cetak Tambahan</h3>
-            
+            <h3 class="text-xl font-semibold mb-4">
+              Pembayaran Cetak Tambahan
+            </h3>
+
             <!-- Order Summary -->
             <div class="bg-gray-50 rounded-lg p-4 mb-4 max-w-md mx-auto">
               <div class="flex justify-between items-center mb-2">
@@ -195,12 +198,14 @@
               </div>
               <div class="flex justify-between items-center mb-2">
                 <span class="text-gray-600">Harga per Print:</span>
-                <span>Rp {price.toLocaleString('id-ID')}</span>
+                <span>Rp {price.toLocaleString("id-ID")}</span>
               </div>
               <div class="flex justify-between items-center border-t pt-2">
-                <span class="text-gray-600 font-semibold">Total:</span>
-                <span class="font-bold text-lg text-blue-600">
-                  Rp {(dataQris?.totalPrice || (qty * price)).toLocaleString('id-ID')}
+                <span class="text-gray-600 font-semibold">Tot al:</span>
+                <span class="font-bold text-lg">
+                  Rp {(dataQris?.totalPrice || qty * price).toLocaleString(
+                    "id-ID"
+                  )}
                 </span>
               </div>
             </div>
@@ -208,7 +213,7 @@
 
           <!-- Integrated Qris Component -->
           <div class="flex justify-center">
-            <Qris 
+            <Qris
               dataQris={qrisData}
               onExpiredTime={handleQrisExpired}
               onPaymentSuccess={handlePaymentSuccess}
@@ -223,34 +228,19 @@
             >
               Tutup
             </button>
-            <button
-              class="btn bg-red-100 border border-red-300 text-red-600 rounded-full px-8 py-2 font-semibold hover:bg-red-200 transition-colors"
-              on:click={cancelPayment}
-            >
-              Batal Pembayaran
-            </button>
-            <button
-              class="btn bg-blue-100 border border-blue-300 text-blue-600 rounded-full px-8 py-2 font-semibold hover:bg-blue-200 transition-colors"
-              on:click={refreshQris}
-              disabled={isLoading}
-            >
-              {#if isLoading}
-                <span class="loading loading-spinner loading-sm mr-2"></span>
-              {/if}
-              🔄 Refresh QR Code
-            </button>
           </div>
-
         {:else if !isLoading}
           <!-- Order Form Section -->
           <form on:submit|preventDefault={createExtraPrintQris}>
             <div class="space-y-6">
               <!-- Price Information -->
               <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p class="text-blue-800 font-semibold mb-2">Informasi Harga</p>
-                <p class="text-blue-700">
-                  Untuk setiap cetak tambahan dikenakan biaya sebesar 
-                  <span class="font-bold">Rp {price.toLocaleString('id-ID')}</span> per lembar
+                <p class="font-semibold mb-2">Informasi Harga</p>
+                <p>
+                  Untuk setiap cetak tambahan dikenakan biaya sebesar
+                  <span class="font-bold"
+                    >Rp {price.toLocaleString("id-ID")}</span
+                  > per lembar
                 </p>
               </div>
 
@@ -260,7 +250,7 @@
                 <div class="join">
                   <button
                     type="button"
-                    class="btn join-item btn-outline"
+                    class="btn join-item btn-base-100 text-white"
                     on:click={() => {
                       if (qty > 0) qty = qty - 1;
                     }}
@@ -278,7 +268,7 @@
                   />
                   <button
                     type="button"
-                    class="btn join-item btn-outline"
+                    class="btn join-item btn-base-100 text-white"
                     on:click={() => {
                       if (qty < 10) qty = qty + 1;
                     }}
@@ -292,9 +282,11 @@
               <!-- Total Price Display -->
               <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <div class="flex justify-between items-center">
-                  <span class="font-bold text-lg">Total yang harus dibayar:</span>
-                  <span class="text-2xl font-bold text-blue-600">
-                    Rp {(qty * parseInt(price)).toLocaleString('id-ID')}
+                  <span class="font-bold text-lg"
+                    >Total yang harus dibayar:</span
+                  >
+                  <span class="text-2xl font-bold">
+                    Rp {(qty * parseInt(price)).toLocaleString("id-ID")}
                   </span>
                 </div>
               </div>
@@ -303,26 +295,19 @@
               <div class="text-center">
                 <button
                   type="submit"
-                  class="btn bg-blue-600 text-white border border-blue-600 rounded-full px-8 py-3 text-lg font-semibold hover:bg-blue-700 transition-colors"
+                  class="btn bg-base-100 text-white border rounded-full px-8 py-3 text-lg font-semibold hover:bg-base-200 transition-colors"
                   disabled={isLoading || qty === 0}
                 >
                   {#if isLoading}
-                    <span class="loading loading-spinner loading-sm mr-2"></span>
+                    <span class="loading loading-spinner loading-sm mr-2"
+                    ></span>
                     Membuat QR Code...
                   {:else}
-                    💳 Buat QR Code Pembayaran
+                    Buat QR Code Pembayaran
                   {/if}
                 </button>
               </div>
-
-              {#if qty === 0}
-                <p class="text-center text-gray-500 text-sm">
-                  Silakan pilih jumlah print yang diinginkan
-                </p>
-              {/if}
-            </div>
           </form>
-
         {:else}
           <!-- Loading State -->
           <div class="flex flex-col items-center py-12">
@@ -332,17 +317,6 @@
         {/if}
       </div>
 
-      {#if !showQris}
-        <!-- Modal footer for form view -->
-        <div class="flex justify-center gap-4 p-6 border-t border-gray-200">
-          <button
-            class="btn bg-gray-100 border border-gray-300 rounded-full px-8 py-2 font-semibold hover:bg-gray-200 transition-colors"
-            on:click={closeModal}
-          >
-            Batal
-          </button>
-        </div>
-      {/if}
     </div>
   </div>
 {/if}

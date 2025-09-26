@@ -94,11 +94,8 @@
     }
 
     if (!orderId) {
-      console.warn("[QRIS] No orderId provided, skipping payment checking");
       return;
     }
-
-    console.log("[QRIS] Starting payment checking for orderId:", orderId);
 
     // Initial check
     setTimeout(() => {
@@ -110,12 +107,6 @@
       if (timeLeft > 0 && orderId) {
         checkPaymentStatus();
       } else {
-        console.log(
-          "[QRIS] Stopping payment checks - timeLeft:",
-          timeLeft,
-          "orderId:",
-          orderId
-        );
         clearInterval(paymentCheckInterval);
         paymentCheckInterval = null;
       }
@@ -124,15 +115,8 @@
 
   async function checkPaymentStatus() {
     if (!orderId || isCheckingPayment || timeLeft <= 0) {
-      console.log("[QRIS] Skipping payment check:", {
-        orderId,
-        isCheckingPayment,
-        timeLeft,
-      });
       return;
     }
-
-    console.log("[QRIS] Checking payment status for orderId:", orderId);
 
     try {
       isCheckingPayment = true;
@@ -171,8 +155,6 @@
   }
 
   function clearAllInterval() {
-    console.log("[QRIS] Clearing all intervals");
-
     if (paymentCheckInterval) {
       clearInterval(paymentCheckInterval);
       paymentCheckInterval = null;
@@ -186,7 +168,6 @@
   // Clean up intervals when component is destroyed
   import { onDestroy } from "svelte";
   onDestroy(() => {
-    console.log("[QRIS] Component destroyed, cleaning up intervals");
     clearAllInterval();
   });
 
@@ -286,7 +267,7 @@
       <div
         class="bg-blue-50 border border-blue-200 rounded-lg p-3 max-w-[400px] mx-auto mt-3"
       >
-        <p class="text-sm text-blue-600 flex items-center justify-center gap-2">
+        <p class="text-sm flex items-center justify-center gap-2">
           <span class="loading loading-spinner loading-sm"></span>
           Memeriksa status pembayaran...
         </p>
@@ -330,10 +311,8 @@
       <div
         class="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-[400px] mx-auto mt-4"
       >
-        <h4 class="font-semibold text-blue-800 mb-2 text-sm">
-          Cara Pembayaran:
-        </h4>
-        <ol class="text-xs text-blue-700 space-y-1 text-left">
+        <h4 class="font-semibold mb-2 text-sm">Cara Pembayaran:</h4>
+        <ol class="text-xs space-y-1 text-left">
           <li>1. Buka aplikasi mobile banking/e-wallet</li>
           <li>2. Pilih fitur "Scan QR" atau "QRIS"</li>
           <li>3. Scan QR code di atas</li>

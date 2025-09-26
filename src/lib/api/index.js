@@ -1,5 +1,5 @@
 class ApiClient {
-  constructor(baseURL = "http://localhost:8000/api") {
+  constructor(baseURL = "/api") {
     this.baseURL = baseURL;
     this.defaultHeaders = {
       "Content-Type": "application/json",
@@ -52,6 +52,38 @@ class ApiClient {
       method: "GET",
       ...options,
     });
+  }
+
+  async postFormData(endpoint, formData, options = {}) {
+    const url = `${this.baseURL}${endpoint}`;
+
+    try {
+      console.log("[API CLIENT] Sending FormData to:", url);
+
+      const response = await fetch(url, {
+        method: "POST",
+        body: formData,
+        // Don't set Content-Type for FormData - browser sets it with boundary
+        ...options,
+      });
+
+      console.log("[API CLIENT] Response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[API CLIENT] Error response:", errorText);
+        throw new Error(
+          `HTTP error! status: ${response.status} - ${errorText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("[API CLIENT] Success response:", result);
+      return result;
+    } catch (error) {
+      console.error("[API CLIENT] FormData request failed:", error);
+      throw error;
+    }
   }
 
   /**

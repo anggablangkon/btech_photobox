@@ -5,6 +5,7 @@
   import QRCode from "qrcode";
   import { appSettings } from "../../stores/appSetting";
   import { afterNavigate, goto } from "$app/navigation";
+  import { postExtraPrint } from "$lib/api/order";
 
   let resultPhoto;
   let selectedFrame;
@@ -36,7 +37,7 @@
   $: images = $photosStore?.photos || [];
 
   onMount(async () => {
-    QRCode.toDataURL("test", {
+    QRCode.toDataURL(`http://192.168.68.131:8000/download/${$photosStore.order_id}`, {
       errorCorrectionLevel: "L",
       margin: "2",
       width: "256",
@@ -45,6 +46,7 @@
       .catch((err) => {
         console.error(err);
       });
+
     isLoading = false;
 
     await tick();
@@ -61,7 +63,7 @@
     }
   });
 
-  function handlePaymentSuccess() {
+  async function handlePaymentSuccess(data) {
     // Close modal
     isOpen = false;
 
@@ -69,8 +71,21 @@
     dataQris = {};
     console.log("dataQris cleared:", dataQris);
 
+    console.log(data);
+    await createExtraPrint(data);
+
     // Trigger print
     print();
+  }
+
+  async function createExtraPrint(data) {
+    const formData = new FormData();
+    formData.append("order_id", $photosStore.order_id);
+    formData.append("invoice_number", data.invoice_number);
+    formData.append("total_prints", data.qty);
+    formData.append("total_price", data.totalPrice);
+
+    const response = await postExtraPrint(formData);
   }
 
   function timeUpdated(audio) {
@@ -249,8 +264,8 @@
   onUpdateDataQris={(e) => {
     dataQris = e;
   }}
-  onPaymentSuccess={() => {
-    handlePaymentSuccess();
+  onPaymentSuccess={(data) => {
+    handlePaymentSuccess(data);
   }}
   {dataQris}
 />
