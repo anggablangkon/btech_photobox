@@ -1,5 +1,6 @@
 <script>
   import { getPaymentStatus } from "$lib/api/payment.js";
+  import { RefreshCcwIcon } from "svelte-feather-icons";
 
   export let dataQris = {
     qrisImage: "",
@@ -9,6 +10,7 @@
 
   export let onExpiredTime = (data) => {};
   export let onPaymentSuccess = (data) => {};
+  export let onCreateNewQris = () => {};
 
   let isCheckingPayment = false;
   let timeLeft = 0; // in seconds
@@ -119,34 +121,34 @@
     }
 
     try {
-      isCheckingPayment = true;
-      const data = await getPaymentStatus(orderId);
+      //   isCheckingPayment = true;
+      //   const data = await getPaymentStatus(orderId);
 
-      console.log("[QRIS] Payment status response:", data);
+      //   console.log("[QRIS] Payment status response:", data);
 
-      if (
-        data.status === "success" ||
-        data.status === "paid" ||
-        data.status === "settlement"
-      ) {
-        console.log("[QRIS] Payment successful!");
-        clearAllInterval();
-        onPaymentSuccess(data);
-      } else if (
-        data.status === "failed" ||
-        data.status === "cancelled" ||
-        data.status === "expired"
-      ) {
-        console.log("[QRIS] Payment failed or cancelled:", data.status);
-        clearAllInterval();
-        onExpiredTime({
-          ...dataQris,
-          reason: data.status,
-          message: data.message,
-        });
-      } else {
-        console.log("[QRIS] Payment still pending:", data.status);
-      }
+      //   if (
+      //     data.status === "success" ||
+      //     data.status === "paid" ||
+      //     data.status === "settlement"
+      //   ) {
+      //     console.log("[QRIS] Payment successful!");
+      //     clearAllInterval();
+      //     onPaymentSuccess(data);
+      //   } else if (
+      //     data.status === "failed" ||
+      //     data.status === "cancelled" ||
+      //     data.status === "expired"
+      //   ) {
+      //     clearAllInterval();
+      //     onExpiredTime({
+      //       ...dataQris,
+      //       reason: data.status,
+      //       message: data.message,
+      //     });
+      //   } else {
+      //     console.log("[QRIS] Payment still pending:", data.status);
+      //   }
+      onPaymentSuccess;
     } catch (error) {
       console.error("[QRIS] Error checking payment status:", error);
     } finally {
@@ -194,10 +196,24 @@
 
   // Export function for manual refresh
   export function refreshPaymentCheck() {
-    console.log("[QRIS] Manual payment check triggered");
     if (orderId && timeLeft > 0) {
       checkPaymentStatus();
     }
+  }
+
+  export function createQris() {
+    // Emit event to parent to create new QRIS
+    initialTimeSet = false;
+    clearAllInterval();
+    timeLeft = 0;
+    qrisImage = null;
+    orderId = null;
+    totalInitialTime = 0;
+    // Notify parent to create new QRIS
+    const event = new CustomEvent("createNewQris", {
+      detail: {},
+    });
+    dispatchEvent(event);
   }
 </script>
 
@@ -220,6 +236,10 @@
         <div class="text-red-500 text-6xl mb-4">⏰</div>
         <p class="text-red-600 font-bold text-lg">Waktu Pembayaran Habis</p>
         <p class="text-red-500 text-sm">Silakan buat pembayaran baru</p>
+        <button class="btn-secondary mt-2" on:click={() => onCreateNewQris()}>
+          <RefreshCcwIcon size="16" class="inline-block mr-1" />
+          Buat Ulang Pembayaran
+        </button>
       </div>
     {:else}
       <div

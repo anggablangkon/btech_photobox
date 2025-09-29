@@ -7,6 +7,7 @@
   import { appSettings } from "../../stores/appSetting.js";
   import Qris from "$lib/components/QRis.svelte";
 
+
   let photoType;
   let isLoading = true;
   let dataQris = {};
@@ -57,6 +58,7 @@
 
   async function createQris() {
     try {
+      isLoading = true;
       const data = await generateQris({
         gross_amount: photoType.price,
       });
@@ -70,6 +72,12 @@
       console.error("Error creating QRIS:", error);
       alert("Gagal membuat kode pembayaran. Silakan coba lagi.");
     }
+  }
+
+  async function reloadQris() {
+    isLoading = true;
+    await createQris();
+    isLoading = false;
   }
 
   // function startCountdown(expiryTime) {
@@ -142,6 +150,10 @@
       goto("/ip");
     }
   }
+
+  function generateManualId() {
+    return Date.now().toString(16) + Math.random().toString(16).substring(2);
+  }
 </script>
 
 <div class="mx-auto min-w-3/4 h-full">
@@ -177,7 +189,17 @@
         {dataQris}
         onExpiredTime={handleExpiredTime}
         onPaymentSuccess={handlePaymentSuccess}
+        onCreateNewQris="{reloadQris}"
       />
+
+      <button
+        class="btn next"
+        on:click={() =>
+          handlePaymentSuccess({
+            order_id: generateManualId(),
+            status: "success",
+          })}>Selanjutnya</button
+      >
     </div>
   {:else}
     <Loading text="Waiting for QRIS generated..."></Loading>

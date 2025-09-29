@@ -30,14 +30,14 @@
       };
     });
   });
-
+  $: selectedSong = $photosStore?.selectedSong || null;
   $: selectedFrame = $photosStore?.frameType || null;
   $: resultPhoto = $photosStore?.imageResult || null;
   $: selectedSong = $photosStore?.selectedSong || null;
   $: images = $photosStore?.photos || [];
 
   onMount(async () => {
-    QRCode.toDataURL(`http://192.168.68.131:8000/download/${$photosStore.order_id}`, {
+    QRCode.toDataURL(`http://localhost:5173/order/${$photosStore.order_id}`, {
       errorCorrectionLevel: "L",
       margin: "2",
       width: "256",
@@ -52,6 +52,8 @@
     await tick();
 
     swiperEl?.initialize();
+    audio.volume = 0.05;
+    audio?.play();
     // await swiperEl?.update();
     // startAutoContinueTimer();
   });
@@ -72,7 +74,7 @@
     console.log("dataQris cleared:", dataQris);
 
     console.log(data);
-    await createExtraPrint(data);
+    // await createExtraPrint(data);
 
     // Trigger print
     print();
@@ -89,11 +91,11 @@
   }
 
   function timeUpdated(audio) {
-    if (audio.currentTime > 15) {
-      audio.pause();
-      audio.currentTime = 0;
-      audio.play();
-    }
+    // if (audio.currentTime > 15) {
+      // audio.pause();
+      // audio.currentTime = 0;
+      // audio.play();
+    // }
   }
 
   function print() {
@@ -174,11 +176,13 @@
 <div class="grid grid-cols-2 size-full">
   {#if !isLoading}
     <div class="flex flex-col items-center justify-center h-full relative">
-      <span
-        class="inline-flex font-bold p-2 bg-base-100 border-3 rounded-full absolute top-0 left-0"
-      >
-        Waktu tersisa {autoContinueCountdown} detik lagi
-      </span>
+      <div class="absolute top-0 left-0">
+        <span
+          class="inline-flex font-bold p-2 bg-base-100 border-3 rounded-full"
+        >
+          Waktu tersisa {autoContinueCountdown} detik lagi
+        </span>
+      </div>
       <div class="w-2/3 h-[75%] flex items-center justify-center p-20">
         <swiper-container
           init="false"
@@ -215,8 +219,13 @@
         <img src={resultPhoto} alt="Print" style="width:100%;height:100%" />
       </div>
       <div
-        class="h-full overflow-hidden flex flex-col items-center justify-center gap-2"
+        class="h-full overflow-hidden flex flex-col items-center justify-center gap-2 relative"
       >
+        <span
+          class="inline-flex font-bold p-2 bg-base-100 border-3 rounded-full absolute top-0 right-0"
+        >
+          Lagu : {selectedSong ? selectedSong.title : "None"}
+        </span>
         <p>Scan QR untuk download file foto</p>
         <div class=" border border-1 h-[200px] w-[200px]">
           <img src={QrImage} alt="" />
@@ -237,12 +246,12 @@
               Extra Print
             </button>
           {/if}
-          <button
+          <!-- <button
             type="button"
             class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
           >
             Share
-          </button>
+          </button> -->
           <button
             type="button"
             class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
@@ -273,9 +282,8 @@
 {#if selectedSong}
   <audio
     bind:this={audio}
-    src={selectedSong.url}
+    src={selectedSong.song_url}
     autoplay
-    volume="1"
     on:timeupdate={() => timeUpdated(audio)}
   ></audio>
 {/if}

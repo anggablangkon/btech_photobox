@@ -247,7 +247,6 @@
         }
       }
       await attemptCreateOrder();
-      goto("/result");
     } catch (error) {
       console.error("[SONG] Final error in saveToOrder:", error);
     } finally {

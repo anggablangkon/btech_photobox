@@ -71,44 +71,51 @@
     isLoading = true;
     const totalPrice = qty * parseInt(price);
 
-    try {
-      const paymentData = {
-        gross_amount: totalPrice,
-        type: "extra_print",
-        quantity: qty,
-      };
+    // try {
+    //   const paymentData = {
+    //     gross_amount: totalPrice,
+    //     type: "extra_print",
+    //     quantity: qty,
+    //   };
 
-      const data = await generateExtraPrintQris(paymentData);
+    //   const data = await generateExtraPrintQris(paymentData);
 
-      // Create new dataQris object
-      const newDataQris = {
-        orderId: data.order_id,
-        qrisImage: data.image,
-        expiryTime: data.expiry_time,
-        qty: qty,
-        totalPrice: totalPrice,
-      };
+    //   // Create new dataQris object
+    //   const newDataQris = {
+    //     orderId: data.order_id,
+    //     qrisImage: data.image,
+    //     expiryTime: data.expiry_time,
+    //     qty: qty,
+    //     totalPrice: totalPrice,
+    //   };
 
-      // Update qrisData for Qris component
-      qrisData = {
-        qrisImage: data.image,
-        orderId: data.order_id,
-        expiryTime: data.expiry_time,
-      };
+    //   // Update qrisData for Qris component
+    //   qrisData = {
+    //     qrisImage: data.image,
+    //     orderId: data.order_id,
+    //     expiryTime: data.expiry_time,
+    //   };
 
-      console.log("New QRIS generated:", newDataQris);
+    //   console.log("New QRIS generated:", newDataQris);
 
-      // Show QRIS component
-      showQris = true;
+    //   // Show QRIS component
+    //   showQris = true;
 
-      // Notify parent component about data update
-      onUpdateDataQris(newDataQris);
-    } catch (error) {
-      console.error("Error creating extra print QRIS:", error);
-      alert("Gagal membuat kode pembayaran. Silakan coba lagi.");
-    } finally {
-      isLoading = false;
-    }
+    //   // Notify parent component about data update
+    //   onUpdateDataQris(newDataQris);
+    // } catch (error) {
+    //   console.error("Error creating extra print QRIS:", error);
+    //   alert("Gagal membuat kode pembayaran. Silakan coba lagi.");
+    // } finally {
+    //   isLoading = false;
+    // }
+
+    onPaymentSuccess({
+      invoice_number: "TEST-INVOICE-123",
+      type: "extra_print",
+      qty: qty,
+      totalPrice: totalPrice,
+    });
   }
 
   function handleQrisExpired(data) {
