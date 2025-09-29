@@ -121,34 +121,33 @@
     }
 
     try {
-      //   isCheckingPayment = true;
-      //   const data = await getPaymentStatus(orderId);
+        isCheckingPayment = true;
+        const data = await getPaymentStatus(orderId);
 
-      //   console.log("[QRIS] Payment status response:", data);
+        console.log("[QRIS] Payment status response:", data);
 
-      //   if (
-      //     data.status === "success" ||
-      //     data.status === "paid" ||
-      //     data.status === "settlement"
-      //   ) {
-      //     console.log("[QRIS] Payment successful!");
-      //     clearAllInterval();
-      //     onPaymentSuccess(data);
-      //   } else if (
-      //     data.status === "failed" ||
-      //     data.status === "cancelled" ||
-      //     data.status === "expired"
-      //   ) {
-      //     clearAllInterval();
-      //     onExpiredTime({
-      //       ...dataQris,
-      //       reason: data.status,
-      //       message: data.message,
-      //     });
-      //   } else {
-      //     console.log("[QRIS] Payment still pending:", data.status);
-      //   }
-      onPaymentSuccess;
+        if (
+          data.status === "success" ||
+          data.status === "paid" ||
+          data.status === "settlement"
+        ) {
+          console.log("[QRIS] Payment successful!");
+          clearAllInterval();
+          onPaymentSuccess(data);
+        } else if (
+          data.status === "failed" ||
+          data.status === "cancelled" ||
+          data.status === "expired"
+        ) {
+          clearAllInterval();
+          onExpiredTime({
+            ...dataQris,
+            reason: data.status,
+            message: data.message,
+          });
+        } else {
+          console.log("[QRIS] Payment still pending:", data.status);
+        }
     } catch (error) {
       console.error("[QRIS] Error checking payment status:", error);
     } finally {
