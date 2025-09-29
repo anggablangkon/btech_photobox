@@ -192,14 +192,14 @@
         onCreateNewQris="{reloadQris}"
       />
 
-      <button
+      <!-- <button
         class="btn next"
         on:click={() =>
           handlePaymentSuccess({
             order_id: generateManualId(),
             status: "success",
           })}>Selanjutnya</button
-      >
+      > -->
     </div>
   {:else}
     <Loading text="Waiting for QRIS generated..."></Loading>
