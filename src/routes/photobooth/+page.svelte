@@ -115,7 +115,7 @@
       try {
         console.log("[PHOTOBOOTH] Loading background image:", background);
         const bgImage = await loadImageWithCORS(background);
-        console.log(bgImage)
+        console.log(bgImage);
         insertImageCapture({
           ctx,
           videoRatio,
@@ -411,7 +411,7 @@
           src={background}
           alt="Background Frame"
           on:load={() => (isCameraOn = true)}
-          class="absolute bottom-0 start-0 background"
+          class="absolute bottom-0 start-0 background w-full"
         />
       {/if}
       {#if isTakingPhoto && captureCountdown > 0}

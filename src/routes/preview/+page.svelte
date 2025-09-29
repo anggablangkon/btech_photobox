@@ -65,23 +65,36 @@
           const ctx = canvas.getContext("2d");
 
           const imageObj = new Image();
+          imageObj.crossOrigin = "anonymous"; // Add this for CORS
           imageObj.src = img.src;
           imageObj.onload = () => {
-            // Use the displayed size of the img
+            // Use the actual image dimensions, not display dimensions
+            const actualWidth = imageObj.naturalWidth || imageObj.width;
+            const actualHeight = imageObj.naturalHeight || imageObj.height;
+
+            // Get the display size for aspect ratio calculation
             const displayWidth = img.offsetWidth;
             const displayHeight = img.offsetHeight;
 
-            canvas.width = displayWidth;
-            canvas.height = displayHeight;
+            // Calculate scale factor to maintain quality
+            const pixelRatio = window.devicePixelRatio || 1;
+            const scaleFactor = Math.max(2, pixelRatio); // Use at least 2x for quality
+
+            // Set canvas size to maintain quality
+            canvas.width = displayWidth * scaleFactor;
+            canvas.height = displayHeight * scaleFactor;
+
+            // Scale the context to match
+            ctx.scale(scaleFactor, scaleFactor);
 
             // Apply filter
             ctx.filter = filter;
 
-            // === Object-fit: cover emulation ===
-            const iw = imageObj.width;
-            const ih = imageObj.height;
-            const cw = canvas.width;
-            const ch = canvas.height;
+            // === Object-fit: cover emulation with high quality ===
+            const iw = actualWidth;
+            const ih = actualHeight;
+            const cw = displayWidth; // Use display width for calculations
+            const ch = displayHeight; // Use display height for calculations
 
             const scale = Math.max(cw / iw, ch / ih);
             const sw = iw * scale;
@@ -90,8 +103,24 @@
             const dx = (cw - sw) / 2;
             const dy = (ch - sh) / 2;
 
+            // Draw with high quality settings
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+
+            // Apply filter again (sometimes gets reset)
             ctx.filter = filter;
+
+            // Draw the image
             ctx.drawImage(imageObj, dx, dy, sw, sh);
+
+            // Set canvas display size to match original image
+            canvas.style.width = displayWidth + "px";
+            canvas.style.height = displayHeight + "px";
+            canvas.style.objectFit = "cover";
+
+            // Copy any relevant attributes from the original image
+            canvas.className = img.className;
+            canvas.dataset.index = img.dataset.index;
 
             // Replace image with canvas in DOM
             if (!img.parentNode) {
@@ -100,6 +129,11 @@
             }
             img.parentNode.replaceChild(canvas, img);
             resolve();
+          };
+
+          imageObj.onerror = () => {
+            console.error("Failed to load image:", img.src);
+            resolve(); // Continue even if one image fails
           };
         });
       })
@@ -114,9 +148,35 @@
     html2canvas(node, {
       useCORS: true,
       allowTaint: false,
-      scale: 2,
+      scale: 3, // Use device pixel ratio for sharp capture
+      width: 400, // Specify exact dimensions
+      height: 600, // Match your frame size
+      backgroundColor: "#ffffff",
+      logging: false,
+      imageTimeout: 0,
+      removeContainer: true,
+      foreignObjectRendering: false, // Sometimes helps with quality
     }).then((a) => {
-      const dataUrl = a.toDataURL("img/png", 1.0);
+      // Create a new canvas at desired output size
+      const outputCanvas = document.createElement('canvas');
+      const outputCtx = outputCanvas.getContext('2d');
+      
+      // Set output size (you can adjust these for final quality)
+      const outputWidth = 1000;  // 2x the original 400px
+      const outputHeight = 1500; // 2x the original 600px
+      
+      outputCanvas.width = outputWidth;
+      outputCanvas.height = outputHeight;
+      
+      // Enable high-quality scaling
+      outputCtx.imageSmoothingEnabled = true;
+      outputCtx.imageSmoothingQuality = 'high';
+      
+      // Draw the high-resolution capture onto the output canvas
+      outputCtx.drawImage(a, 0, 0, outputWidth, outputHeight);
+      
+      // Convert to PNG with maximum quality
+      const dataUrl = outputCanvas.toDataURL("image/png", 1.0);
       photosStore.update((state) => {
         return { ...state, imageResult: dataUrl };
       });
