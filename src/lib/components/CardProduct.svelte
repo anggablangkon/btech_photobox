@@ -12,7 +12,7 @@
   }
 </script>
 
-<div
+<button
   class="w-full h-full flex flex-col shrink items-center border-4 bg-blue-50 shadow-md mx-auto text-center rounded-xl
         {selected ? 'border-blue-400' : 'border-blue-100'}"
   on:click={handleClick}
@@ -29,4 +29,4 @@
   >
     Rp{parseInt(photoType.price).toLocaleString("id-id")}
   </h1>
-</div>
+</button>

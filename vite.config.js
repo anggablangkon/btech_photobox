@@ -1,14 +1,26 @@
 import tailwindcss from "@tailwindcss/vite";
 import { sveltekit } from "@sveltejs/kit/vite";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 
-export default defineConfig({
-  plugins: [tailwindcss(), sveltekit()],
-  server: {
-    proxy: {
-      "/api": "http://192.168.68.64:8000", // forward /api to express
-      "/storage": "http://192.168.68.64:8000", // forward /storage to express
-      "/uploads": "http://192.168.68.64:8000", // forward /storage to express
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+
+  console.log("Loaded VITE_ADMIN_URL:", env.VITE_ADMIN_URL); // Debug log
+
+  return {
+    plugins: [tailwindcss(), sveltekit()],
+    server: {
+      proxy: {
+        "/api": {
+          target: env.VITE_ADMIN_URL,
+        },
+        "/storage": {
+          target: env.VITE_ADMIN_URL,
+        },
+        "/uploads": {
+          target: env.VITE_ADMIN_URL,
+        },
+      },
     },
-  },
+  };
 });
