@@ -27,7 +27,7 @@
       };
     });
   });
-
+  
   $: selectedIp = $photosStore?.photoIp || null;
 
   onMount(async () => {

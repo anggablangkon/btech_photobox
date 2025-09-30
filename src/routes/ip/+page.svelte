@@ -67,7 +67,7 @@
     photosStore.update((state) => {
       return { ...state, photoIp: selectedIp };
     });
-    goto("/frame");
+    goto("/song");
   }
 </script>
 

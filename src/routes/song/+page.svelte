@@ -30,8 +30,6 @@
   $: photoData = $photosStore;
 
   onMount(async () => {
-    console.log("[SONG] Photo data:", photoData);
-
     try {
       songLists = await getSongById(photoData.photoIp.id);
       console.log("[SONG] Songs loaded:", songLists);
@@ -126,7 +124,7 @@
 
     try {
       const base64Parts = base64Data.split(",");
-      if (base64Parts.length !== 2) {
+      if (base64Parts.length !== 2) { 
         console.error(
           "[SONG] Invalid base64 format:",
           base64Data.substring(0, 50) + "..."
@@ -156,8 +154,6 @@
     }
 
     isSaving = true;
-    console.log("[SONG] Starting to save order with data:", photoData);
-
     try {
       const form = new FormData();
 
@@ -226,7 +222,7 @@
           console.log("[SONG] Order saved successfully:", response);
 
           // Navigate to result page on success
-          goto("/result");
+          goto("/frame");
         } catch (error) {
           console.error(
             `[SONG] Error saving order (attempt ${retryCount + 1}):`,

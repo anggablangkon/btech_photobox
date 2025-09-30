@@ -28,9 +28,10 @@
     });
   });
 
-  $: photos = $photosStore?.photos || [];
-  $: selectedFrameType = $photosStore?.frameType.id;
-  $: frame = $photosStore?.frameType;
+  $: photoData = $photosStore;
+  $: photos = photoData.photos || [];
+  $: selectedFrameType = photoData.frameType.id;
+  $: frame = photoData.frameType;
   $: frameOptions = frame ? $photoOptions?.[frame.frame_id] : null;
 
   onMount(async () => {
@@ -182,8 +183,112 @@
         return { ...state, imageResult: dataUrl };
       });
 
-      goto("/song");
+      await saveToOrder();
     });
+  }
+
+   async function saveToOrder() {
+    if (isSaving) {
+      console.log("[SONG] Already saving, skipping...");
+      return;
+    }
+
+    isSaving = true;
+    try {
+      const form = new FormData();
+
+      // Basic order information
+      form.append("order_id", photoData.order_id || "");
+      if (photoData.background) {
+        form.append("image_id", photoData.background.id || "");
+      }
+      form.append("type", photoData.photoType?.title || "");
+      form.append("ip_id", photoData.photoIp?.id || "");
+      form.append("frame_id", photoData.frameType?.id || "");
+      form.append("price", photoData.photoType?.price || "");
+
+      // Song selection
+      const songId = photoData.selectedSong ? photoData.selectedSong.id : null;
+      form.append("song_id", songId || "");
+
+      console.log("[SONG] Basic form data added");
+
+      // Main processed image
+      if (photoData.imageResult) {
+        const imageBlob = base64ToBlob(photoData.imageResult, "image/jpeg");
+        if (imageBlob) {
+          form.append("image_result", imageBlob, "processed_image.jpg");
+          console.log("[SONG] Main image added to form");
+        } else {
+          console.error("[SONG] Failed to convert main image");
+        }
+      }
+
+      // Individual photos
+      if (photoData.photos && Array.isArray(photoData.photos)) {
+        const formPhoto = [];
+        photoData.photos.forEach((photo, index) => {
+          if (photo && typeof photo === "string") {
+            const photoBlob = base64ToBlob(photo, "image/jpeg");
+            if (photoBlob) {
+              form.append(`photos[${index}]`, photoBlob, `photo_${index}.jpg`);
+              console.log(`[SONG] Photo ${index} added to form`);
+            }
+          }
+        });
+      } else {
+        console.warn("[SONG] No photos array found or invalid format");
+      }
+
+      // Debug: Log form contents
+      console.log("[SONG] Form data contents:");
+      for (let pair of form.entries()) {
+        console.log(
+          `${pair[0]}:`,
+          pair[1] instanceof Blob ? `Blob (${pair[1].size} bytes)` : pair[1]
+        );
+      }
+
+      // Send to API with retry logic
+      let retryCount = 0;
+      const maxRetries = 1;
+
+      async function attemptCreateOrder() {
+        try {
+          console.log(
+            `[SONG] Attempting to create order (attempt ${retryCount + 1}/${maxRetries + 1})`
+          );
+          const response = await createOrder(form);
+          console.log("[SONG] Order saved successfully:", response);
+
+          // Navigate to result page on success
+          goto("/frame");
+        } catch (error) {
+          console.error(
+            `[SONG] Error saving order (attempt ${retryCount + 1}):`,
+            error
+          );
+
+          // if (retryCount < maxRetries) {
+          //   retryCount++;
+          //   console.log(`[SONG] Retrying... (${retryCount}/${maxRetries})`);
+          //   await new Promise((resolve) =>
+          //     setTimeout(resolve, 1000 * retryCount)
+          //   ); // Exponential backoff
+          //   await attemptCreateOrder();
+          // } else {
+          //   console.error("[SONG] Max retries reached. Order creation failed.");
+          //   alert("Failed to save order. Please try again.");
+          //   throw error;
+          // }
+        }
+      }
+      await attemptCreateOrder();
+    } catch (error) {
+      console.error("[SONG] Final error in saveToOrder:", error);
+    } finally {
+      isSaving = false;
+    }
   }
 
   function startAutoContinueTimer() {
