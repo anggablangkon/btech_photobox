@@ -169,6 +169,7 @@
       form.append("type", photoData.photoType?.title || "");
       form.append("ip_id", photoData.photoIp?.id || "");
       form.append("frame_id", photoData.frameType?.id || "");
+      form.append("price", photoData.photoType?.price || "");
 
       // Song selection
       const songId = photoData.selectedSong ? photoData.selectedSong.id : null;

@@ -82,7 +82,7 @@
 
   async function takeFrame(index, loop = true) {
     isTakingPhoto = true;
-    captureCountdown = 3;
+    captureCountdown = 10;
 
     while (captureCountdown > 0) {
       await new Promise((r) => setTimeout(r, 1000));

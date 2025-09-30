@@ -53,6 +53,7 @@
       ".frame div.absolute img"
     );
     const filteredPhotos = [];
+    
     // Replace images with canvas
     await Promise.all(
       Array.from(photoContainers).map((img) => {

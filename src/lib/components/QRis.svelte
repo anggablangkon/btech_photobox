@@ -121,33 +121,33 @@
     }
 
     try {
-        isCheckingPayment = true;
-        const data = await getPaymentStatus(orderId);
+      isCheckingPayment = true;
+      const data = await getPaymentStatus(orderId);
 
-        console.log("[QRIS] Payment status response:", data);
+      console.log("[QRIS] Payment status response:", data);
 
-        if (
-          data.status === "success" ||
-          data.status === "paid" ||
-          data.status === "settlement"
-        ) {
-          console.log("[QRIS] Payment successful!");
-          clearAllInterval();
-          onPaymentSuccess(data);
-        } else if (
-          data.status === "failed" ||
-          data.status === "cancelled" ||
-          data.status === "expired"
-        ) {
-          clearAllInterval();
-          onExpiredTime({
-            ...dataQris,
-            reason: data.status,
-            message: data.message,
-          });
-        } else {
-          console.log("[QRIS] Payment still pending:", data.status);
-        }
+      if (
+        data.status === "success" ||
+        data.status === "paid" ||
+        data.status === "settlement"
+      ) {
+        console.log("[QRIS] Payment successful!");
+        clearAllInterval();
+        onPaymentSuccess(data);
+      } else if (
+        data.status === "failed" ||
+        data.status === "cancelled" ||
+        data.status === "expired"
+      ) {
+        clearAllInterval();
+        onExpiredTime({
+          ...dataQris,
+          reason: data.status,
+          message: data.message,
+        });
+      } else {
+        console.log("[QRIS] Payment still pending:", data.status);
+      }
     } catch (error) {
       console.error("[QRIS] Error checking payment status:", error);
     } finally {
@@ -218,6 +218,9 @@
 
 <div class="p-2 w-1/2 flex items-center">
   <div class="text-center mx-auto p-3">
+    <p class="font-bold text-start my-3 text-blue-950">
+      Order ID : {orderId}
+    </p>
     {#if qrisImage && timeLeft > 0}
       <div
         class="h-min border-double border-4 border-white mx-auto w-[400px] bg-base-100 rounded-xl shadow flex flex-col items-center justify-center overflow-hidden"
@@ -254,6 +257,9 @@
       <div class="mx-auto my-5">
         <p class="font-bold text-lg {timeColor} mb-2">
           Waktu pembayaran: {formatTime(timeLeft)}
+          {#if isCheckingPayment}
+            <span class="loading loading-spinner loading-xs"></span>
+          {/if}
         </p>
 
         <!-- Progress Bar -->
@@ -297,12 +303,6 @@
       >
         <p class="text-xs text-gray-600">
           🔄 Status pembayaran dicek otomatis setiap 5 detik
-        </p>
-        <!-- Debug info (remove in production) -->
-        <p class="text-xs text-gray-400 mt-1">
-          OrderID: {orderId || "Not set"} | Next check in: {paymentCheckInterval
-            ? "~5s"
-            : "Stopped"}
         </p>
       </div>
     {/if}

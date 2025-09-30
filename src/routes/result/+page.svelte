@@ -52,7 +52,7 @@
     await tick();
 
     swiperEl?.initialize();
-    audio.volume = 0.05;
+    audio.volume = 0.9;
     audio?.play();
     // await swiperEl?.update();
     // startAutoContinueTimer();

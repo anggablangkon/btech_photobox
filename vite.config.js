@@ -6,9 +6,9 @@ export default defineConfig({
   plugins: [tailwindcss(), sveltekit()],
   server: {
     proxy: {
-      "/api": "http://localhost:8000", // forward /api to express
-      "/storage": "http://localhost:8000", // forward /storage to express
-      "/uploads": "http://localhost:8000", // forward /storage to express
+      "/api": "http://192.168.68.64:8000", // forward /api to express
+      "/storage": "http://192.168.68.64:8000", // forward /storage to express
+      "/uploads": "http://192.168.68.64:8000", // forward /storage to express
     },
   },
 });

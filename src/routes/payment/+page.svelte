@@ -7,7 +7,6 @@
   import { appSettings } from "../../stores/appSetting.js";
   import Qris from "$lib/components/QRis.svelte";
 
-
   let photoType;
   let isLoading = true;
   let dataQris = {};
@@ -150,10 +149,6 @@
       goto("/ip");
     }
   }
-
-  function generateManualId() {
-    return Date.now().toString(16) + Math.random().toString(16).substring(2);
-  }
 </script>
 
 <div class="mx-auto min-w-3/4 h-full">
@@ -180,16 +175,13 @@
             Rp{parseInt(photoType.price).toLocaleString("id-ID")}
           </h1>
         </div>
-        <p class="text-center mt-4">
-          Pastikan Anda sudah siap setelah membayar
-        </p>
       </div>
 
       <Qris
         {dataQris}
         onExpiredTime={handleExpiredTime}
         onPaymentSuccess={handlePaymentSuccess}
-        onCreateNewQris="{reloadQris}"
+        onCreateNewQris={reloadQris}
       />
 
       <!-- <button
