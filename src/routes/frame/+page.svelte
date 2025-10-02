@@ -23,17 +23,17 @@
       return {
         ...state,
         backgroundPage: "/background/BACKGROUND 7.jpg",
-        title: "Pilih Frame",
+        title: "Select Frame",
       };
     });
   });
-  
+
   $: selectedIp = $photosStore?.photoIp || null;
 
   onMount(async () => {
     frames = await getFrames({ ip_id: selectedIp.id });
     isLoading = false;
-    startCountdownTimer();
+    // startCountdownTimer();
   });
 
   const prevSlide = () => {
@@ -66,7 +66,7 @@
       return { ...state, frameType: frame };
     });
 
-    goto("/background");
+    goto("/photobooth");
   }
 </script>
 
@@ -121,7 +121,7 @@
           {/each}
         {:else}
           <swiper-slide class="p-5 h-full flex items-center justify-center">
-            <div
+            <button
               class="shadow-lg rounded-xl bg-white border border-1 border-base-300 aspect-[2/3] h-full flex justify-center p-5"
               on:click={() => selectFrame(frame)}
             >
@@ -134,7 +134,7 @@
                   class="object-contain w-full h-full"
                 />
               </figure>
-            </div>
+            </button>
           </swiper-slide>
         {/if}
       </swiper-container>

@@ -6,23 +6,23 @@ export const photosStore = writable({
   photoCount: 0,
   photoIp: null,
   imageResult: null,
-  photoType: {},
+  photoType: null,
   selectedSong: null,
   filteredPhotos: [],
 });
 
 export const photoOptions = writable({
   1: [
-    { image: 1, x: 25, y: 42, w: 160, h: 210 },
-    { image: 2, x: 215, y: 42, w: 160, h: 210 },
-    { image: 3, x: 25, y: 288, w: 160, h: 210 },
-    { image: 4, x: 215, y: 288, w: 160, h: 210 },
+    { image: 1, x: 6.4, y: 6.9, w: 40, h: 35 },
+    { image: 2, x: 53.5, y: 6.9, w: 40, h: 35 },
+    { image: 3, x: 6.4, y: 48, w: 40, h: 35 },
+    { image: 4, x: 53.5, y: 48, w: 40, h: 35 },
   ],
   2: [
-    { image: 1, x: 25, y: 116, w: 160, h: 210 },
-    { image: 2, x: 215, y: 36, w: 160, h: 210 },
-    { image: 3, x: 25, y: 364, w: 160, h: 210 },
-    { image: 4, x: 215, y: 260, w: 160, h: 210 },
+    { image: 1, x: 6.3, y: 19.4, w: 40, h: 35 },
+    { image: 2, x: 6.3, y: 60.5, w: 40, h: 35 },
+    { image: 3, x: 53.7, y: 6, w: 40, h: 35 },
+    { image: 4, x: 53.7, y: 47, w: 40, h: 35 },
   ],
   3: [
     { image: 1, x: 24, y: 89, w: 157, h: 92 },
@@ -35,10 +35,10 @@ export const photoOptions = writable({
     { image: 4, x: 217, y: 377, w: 157, h: 92 },
   ],
   4: [
-    { image: 1, x: 15, y: 101, w: 182, h: 145 },
-    { image: 2, x: 204, y: 101, w: 182, h: 145 },
-    { image: 3, x: 15, y: 252, w: 182, h: 145 },
-    { image: 4, x: 204, y: 252, w: 182, h: 145 },
+    { image: 1, x: 4, y: 16.9, w: 45, h: 24 },
+    { image: 2, x: 51, y: 16.9, w: 45, h: 24 },
+    { image: 3, x: 4, y: 42.2, w: 45, h: 24 },
+    { image: 4, x: 51, y: 42.2, w: 45, h: 24 },
   ],
 });
 
@@ -65,5 +65,10 @@ export function resetPhotoStore() {
     photos: [], // array of frames, each frame can have 1-4 photos
     frameType: 0, // selected frame layout index
     photoCount: 0,
+    photoIp: null,
+    imageResult: null,
+    photoType: {},
+    selectedSong: null,
+    filteredPhotos: [],
   });
 }

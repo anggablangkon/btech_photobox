@@ -5,7 +5,7 @@
   import { afterNavigate, goto } from "$app/navigation";
   import { appSettings } from "../../stores/appSetting";
   import { getSongById } from "$lib/api/songs";
-  import { createOrder } from "$lib/api/order";
+
 
   // store references to <audio>
   let audio = [];
@@ -22,7 +22,7 @@
       return {
         ...state,
         backgroundPage: "/background/BACKGROUND 10.jpg",
-        title: "Pilih Lagu",
+        title: "Select Song",
       };
     });
   });
@@ -115,142 +115,6 @@
     }, stepTime);
   }
 
-  // Convert base64 image to Blob
-  function base64ToBlob(base64Data, contentType = "image/jpeg") {
-    if (!base64Data || typeof base64Data !== "string") {
-      console.error("[SONG] Invalid base64 data:", base64Data);
-      return null;
-    }
-
-    try {
-      const base64Parts = base64Data.split(",");
-      if (base64Parts.length !== 2) { 
-        console.error(
-          "[SONG] Invalid base64 format:",
-          base64Data.substring(0, 50) + "..."
-        );
-        return null;
-      }
-
-      const byteCharacters = atob(base64Parts[1]);
-      const byteNumbers = new Array(byteCharacters.length);
-
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-
-      const byteArray = new Uint8Array(byteNumbers);
-      return new Blob([byteArray], { type: contentType });
-    } catch (error) {
-      console.error("[SONG] Error converting base64 to blob:", error);
-      return null;
-    }
-  }
-
-  async function saveToOrder() {
-    if (isSaving) {
-      console.log("[SONG] Already saving, skipping...");
-      return;
-    }
-
-    isSaving = true;
-    try {
-      const form = new FormData();
-
-      // Basic order information
-      form.append("order_id", photoData.order_id || "");
-      if (photoData.background) {
-        form.append("image_id", photoData.background.id || "");
-      }
-      form.append("type", photoData.photoType?.title || "");
-      form.append("ip_id", photoData.photoIp?.id || "");
-      form.append("frame_id", photoData.frameType?.id || "");
-      form.append("price", photoData.photoType?.price || "");
-
-      // Song selection
-      const songId = photoData.selectedSong ? photoData.selectedSong.id : null;
-      form.append("song_id", songId || "");
-
-      console.log("[SONG] Basic form data added");
-
-      // Main processed image
-      if (photoData.imageResult) {
-        const imageBlob = base64ToBlob(photoData.imageResult, "image/jpeg");
-        if (imageBlob) {
-          form.append("image_result", imageBlob, "processed_image.jpg");
-          console.log("[SONG] Main image added to form");
-        } else {
-          console.error("[SONG] Failed to convert main image");
-        }
-      }
-
-      // Individual photos
-      if (photoData.photos && Array.isArray(photoData.photos)) {
-        const formPhoto = [];
-        photoData.photos.forEach((photo, index) => {
-          if (photo && typeof photo === "string") {
-            const photoBlob = base64ToBlob(photo, "image/jpeg");
-            if (photoBlob) {
-              form.append(`photos[${index}]`, photoBlob, `photo_${index}.jpg`);
-              console.log(`[SONG] Photo ${index} added to form`);
-            }
-          }
-        });
-      } else {
-        console.warn("[SONG] No photos array found or invalid format");
-      }
-
-      // Debug: Log form contents
-      console.log("[SONG] Form data contents:");
-      for (let pair of form.entries()) {
-        console.log(
-          `${pair[0]}:`,
-          pair[1] instanceof Blob ? `Blob (${pair[1].size} bytes)` : pair[1]
-        );
-      }
-
-      // Send to API with retry logic
-      let retryCount = 0;
-      const maxRetries = 1;
-
-      async function attemptCreateOrder() {
-        try {
-          console.log(
-            `[SONG] Attempting to create order (attempt ${retryCount + 1}/${maxRetries + 1})`
-          );
-          const response = await createOrder(form);
-          console.log("[SONG] Order saved successfully:", response);
-
-          // Navigate to result page on success
-          goto("/frame");
-        } catch (error) {
-          console.error(
-            `[SONG] Error saving order (attempt ${retryCount + 1}):`,
-            error
-          );
-
-          // if (retryCount < maxRetries) {
-          //   retryCount++;
-          //   console.log(`[SONG] Retrying... (${retryCount}/${maxRetries})`);
-          //   await new Promise((resolve) =>
-          //     setTimeout(resolve, 1000 * retryCount)
-          //   ); // Exponential backoff
-          //   await attemptCreateOrder();
-          // } else {
-          //   console.error("[SONG] Max retries reached. Order creation failed.");
-          //   alert("Failed to save order. Please try again.");
-          //   throw error;
-          // }
-        }
-      }
-      await attemptCreateOrder();
-    } catch (error) {
-      console.error("[SONG] Final error in saveToOrder:", error);
-    } finally {
-      isSaving = false;
-    }
-  }
-
   async function selectSong(song) {
     if (isSaving) {
       console.log("[SONG] Already processing, please wait...");
@@ -267,8 +131,7 @@
     // Wait for store to update
     await tick();
 
-    // Save to order
-    await saveToOrder();
+    goto("/frame");
   }
 
   async function skipSong() {
@@ -286,9 +149,8 @@
 
     // Wait for store to update
     await tick();
-
-    // Save to order
-    await saveToOrder();
+    
+    goto("/frame");
   }
 </script>
 
@@ -339,13 +201,13 @@
                     <span class="loading loading-spinner loading-sm mr-2"
                     ></span>
                   {/if}
-                  Pilih Lagu
+                  Select Song
                 </button>
               </div>
               <div class="w-40 h-full items-center justify-center flex">
                 <button
                   type="button"
-                  class="hover:bg-emerald-300"
+                  class="hover:bg-orange-200"
                   on:click={() => handlePlay(i)}
                   disabled={isSaving}
                 >
@@ -364,20 +226,6 @@
         {/each}
       {/if}
     </div>
-
-    {#if isSaving}
-      <div
-        class="fixed inset-0 bg-black/90 bg-opacity-50 flex items-center justify-center z-50"
-      >
-        <div class="bg-white rounded-lg p-6 text-center">
-          <span class="loading loading-spinner loading-lg mb-4"></span>
-          <p class="text-lg font-semibold">Saving your order...</p>
-          <p class="text-sm text-gray-600">
-            Please wait, this may take a moment
-          </p>
-        </div>
-      </div>
-    {/if}
   </div>
 {:else}
   <div class="w-full my-auto text-center">
