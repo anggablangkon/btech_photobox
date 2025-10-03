@@ -12,8 +12,6 @@ const STATIC_FRAMES = [
   },
 ];
 
-const url = import.env.VITE_API_URL
-
 /**
  * Get all frames
  * @param {boolean} useStatic - Force use static data
