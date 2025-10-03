@@ -1,6 +1,6 @@
 <script>
   import { getPaymentStatus } from "$lib/api/payment.js";
-  import { RefreshCcwIcon } from "svelte-feather-icons";
+  import { RefreshCcwIcon, RefreshCwIcon } from "svelte-feather-icons";
 
   export let dataQris = {
     qrisImage: "",
@@ -216,131 +216,70 @@
   }
 </script>
 
-<div class="p-2 w-1/2 flex items-center">
-  <div class="text-center mx-auto p-3">
-    <p class="font-bold text-start my-3 text-blue-950">
-      Order ID : {orderId}
-    </p>
-    {#if qrisImage && timeLeft > 0}
-      <div
-        class="h-min border-double border-4 border-white mx-auto w-[400px] bg-base-100 rounded-xl shadow flex flex-col items-center justify-center overflow-hidden"
-      >
-        <img
-          src={qrisImage}
-          alt="QRIS Payment Code"
-          class="object-cover w-full"
-        />
-      </div>
-    {:else if timeLeft === 0}
-      <div
-        class="min-h-[350px] border-double border-4 border-red-200 mx-auto w-[400px] bg-red-50 rounded-xl shadow flex flex-col items-center justify-center overflow-hidden"
-      >
-        <div class="text-red-500 text-6xl mb-4">⏰</div>
-        <p class="text-red-600 font-bold text-lg">Waktu Pembayaran Habis</p>
-        <p class="text-red-500 text-sm">Silakan buat pembayaran baru</p>
-        <button class="btn-secondary mt-2" on:click={() => onCreateNewQris()}>
-          <RefreshCcwIcon size="16" class="inline-block mr-1" />
-          Buat Ulang Pembayaran
-        </button>
-      </div>
-    {:else}
-      <div
-        class="min-h-[350px] border-double border-4 border-white mx-auto w-[400px] bg-base-100 rounded-xl shadow flex flex-col items-center justify-center overflow-hidden"
-      >
-        <span class="loading loading-spinner loading-lg"></span>
-        <p class="mt-4 text-gray-500">Memuat QR Code...</p>
-      </div>
-    {/if}
+<div class="text-center mx-auto p-3">
+  <p class="font-bold my-3 text-blue-950">
+    Order ID : {orderId}
+  </p>
+  {#if qrisImage && timeLeft > 0}
+    <div
+      class="h-min border-double border-4 border-white mx-auto w-[400px] bg-base-100 rounded-xl shadow flex flex-col items-center justify-center overflow-hidden"
+    >
+      <img
+        src={qrisImage}
+        alt="QRIS Payment Code"
+        class="object-cover w-full"
+      />
+    </div>
+  {:else if timeLeft === 0}
+    <div
+      class="min-h-[350px] border-double border-4 border-red-200 mx-auto w-[400px] bg-red-50 rounded-xl shadow flex flex-col items-center justify-center overflow-hidden"
+    >
+      <div class="text-red-500 text-6xl mb-4">⏰</div>
+      <p class="text-red-600 font-bold text-lg">Waktu Pembayaran Habis</p>
+      <p class="text-red-500 text-sm">Silakan buat pembayaran baru</p>
+      <button class="btn-secondary mt-2" on:click={() => onCreateNewQris()}>
+        <RefreshCcwIcon size="16" class="inline-block mr-1" />
+        Buat Ulang Pembayaran
+      </button>
+    </div>
+  {:else}
+    <div
+      class="min-h-[350px] border-double border-4 border-white mx-auto w-[400px] bg-base-100 rounded-xl shadow flex flex-col items-center justify-center overflow-hidden"
+    >
+      <span class="loading loading-spinner loading-lg"></span>
+      <p class="mt-4 text-gray-500">Memuat QR Code...</p>
+    </div>
+  {/if}
 
-    <!-- Timer Display -->
-    {#if timeLeft > 0}
-      <div class="mx-auto my-5">
-        <p class="font-bold text-lg {timeColor} mb-2">
-          Waktu pembayaran: {formatTime(timeLeft)}
-          {#if isCheckingPayment}
-            <span class="loading loading-spinner loading-xs"></span>
-          {/if}
-        </p>
-
-        <!-- Progress Bar -->
-        <div class="w-full bg-gray-200 rounded-full h-2 max-w-[400px] mx-auto">
-          <div
-            class="h-2 rounded-full transition-all duration-1000 {timeLeft <= 60
-              ? 'bg-red-500'
-              : timeLeft <= 300
-                ? 'bg-orange-500'
-                : 'bg-green-500'}"
-            style="width: {progressPercentage}%"
-          ></div>
-        </div>
-
-        <!-- Warning messages -->
-        {#if timeLeft <= 60}
-          <p class="text-red-500 text-sm mt-2 animate-pulse">
-            ⚠️ Segera lakukan pembayaran!
-          </p>
-        {:else if timeLeft <= 300}
-          <p class="text-orange-500 text-sm mt-2">
-            ⏳ Waktu pembayaran tinggal sedikit
-          </p>
+  <!-- Timer Display -->
+  {#if timeLeft > 0}
+    <div class="mx-auto my-5">
+      <p class="font-bold text-lg {timeColor} mb-2">
+        Waktu pembayaran: {formatTime(timeLeft)}
+        {#if isCheckingPayment}
+          <span class="loading loading-spinner loading-xs"></span>
         {/if}
-      </div>
-    {/if}
+      </p>
+    </div>
+  {/if}
 
-    <!-- Payment status indicator -->
-    {#if isCheckingPayment}
-      <div
-        class="bg-blue-50 border border-blue-200 rounded-lg p-3 max-w-[400px] mx-auto mt-3"
+  <!-- Manual refresh button (for debugging) -->
+  {#if timeLeft > 0 && orderId}
+    <div class="mt-3">
+      <button
+        class="btn btn-sm btn-outline-base-100 text-white"
+        on:click={() => checkPaymentStatus()}
+        disabled={isCheckingPayment}
       >
-        <p class="text-sm flex items-center justify-center gap-2">
-          <span class="loading loading-spinner loading-sm"></span>
-          Memeriksa status pembayaran...
-        </p>
-      </div>
-    {:else if timeLeft > 0}
-      <div
-        class="bg-gray-50 border border-gray-200 rounded-lg p-3 max-w-[400px] mx-auto mt-3"
-      >
-        <p class="text-xs text-gray-600">
-          🔄 Status pembayaran dicek otomatis setiap 5 detik
-        </p>
-      </div>
-    {/if}
-
-    <!-- Manual refresh button (for debugging) -->
-    {#if timeLeft > 0 && orderId}
-      <div class="mt-3">
-        <button
-          class="btn btn-sm btn-outline"
-          on:click={() => checkPaymentStatus()}
-          disabled={isCheckingPayment}
-        >
-          {#if isCheckingPayment}
-            <span class="loading loading-spinner loading-xs"></span>
-          {:else}
-            🔄
-          {/if}
-          Check Now
-        </button>
-      </div>
-    {/if}
-
-    <!-- Instructions -->
-    {#if timeLeft > 0}
-      <div
-        class="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-[400px] mx-auto mt-4"
-      >
-        <h4 class="font-semibold mb-2 text-sm">Cara Pembayaran:</h4>
-        <ol class="text-xs space-y-1 text-left">
-          <li>1. Buka aplikasi mobile banking/e-wallet</li>
-          <li>2. Pilih fitur "Scan QR" atau "QRIS"</li>
-          <li>3. Scan QR code di atas</li>
-          <li>4. Konfirmasi jumlah pembayaran</li>
-          <li>5. Selesaikan pembayaran</li>
-        </ol>
-      </div>
-    {/if}
-  </div>
+        {#if isCheckingPayment}
+          <span class="loading loading-spinner loading-xs"></span>
+        {:else}
+          <RefreshCwIcon size="16" class="inline-block mr-1" />
+        {/if}
+        Check Now
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>

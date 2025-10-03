@@ -22,7 +22,7 @@
       return {
         ...state,
         backgroundPage: "/background/BACKGROUND 3.jpg",
-        title: "Pilih IP",
+        title: "Select IP",
       };
     });
   });
@@ -67,7 +67,7 @@
     photosStore.update((state) => {
       return { ...state, photoIp: selectedIp };
     });
-    goto("/frame");
+    goto("/song");
   }
 </script>
 
@@ -87,21 +87,24 @@
           class="absolute left-0 top-1/2 -translate-y-1/2 rounded-full bg-blue-300 .prev-button p-0"
           on:click={prevSlide}
         >
-          <ArrowLeftCircleIcon size="32" />
+          <ArrowLeftCircleIcon size="64" />
         </button>
         <button
           class="absolute right-0 top-1/2 -translate-y-1/2 rounded-full bg-blue-300 .next-button p-0"
           on:click={nextSlide}
         >
-          <ArrowRightCircleIcon size="32" />
+          <ArrowRightCircleIcon size="64" />
         </button>
       {/if}
       <swiper-container
         bind:this={swiperEl}
         class="mx-auto h-full w-3/4"
-        slides-per-view="2"
+        slides-per-view="1"
         loop="true"
         space-between="30"
+        breakpoints={{
+          "480": { slidesPerView: 2 },
+        }}
       >
         {#each Object.entries(ips) as [i, ip]}
           <swiper-slide class="p-10 flex items-center justify-center">

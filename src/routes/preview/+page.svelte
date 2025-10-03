@@ -4,19 +4,22 @@
   import { onMount, onDestroy, tick } from "svelte";
   import html2canvas from "html2canvas-pro";
   import { filterPresets } from "$lib/filterPresets.js";
+  import { base64ToBlob } from "$lib/helpers/image.js";
+  import { createOrder } from "$lib/api/order.js";
   import { appSettings } from "../../stores/appSetting.js";
-
-  let photos = [];
-  let frame;
-  let frameOptions;
-  let selectedMenu = "filter";
-  let autoContinueTimer = 0;
-  let autoContinueCountdown;
-  let selectedFilter = "normal";
-  let processSaving = false;
-  let finishStatus = false;
-  let isLoading = true;
-  let selectedFrameType = 1;
+  let photos = [],
+    frame,
+    frameOptions,
+    isSaving,
+    selectedMenu = "filter",
+    autoContinueTimer = 0,
+    autoContinueCountdown,
+    selectedFilter = "normal",
+    processSaving = false,
+    finishStatus = false,
+    isLoading = true,
+    imageResult = null,
+    selectedFrameType = 1;
 
   afterNavigate(() => {
     appSettings.update((state) => {
@@ -28,9 +31,10 @@
     });
   });
 
-  $: photos = $photosStore?.photos || [];
-  $: selectedFrameType = $photosStore?.frameType.id;
-  $: frame = $photosStore?.frameType;
+  $: photoData = $photosStore;
+  $: photos = photoData.photos || [];
+  $: selectedFrameType = photoData.frameType.id;
+  $: frame = photoData.frameType;
   $: frameOptions = frame ? $photoOptions?.[frame.frame_id] : null;
 
   onMount(async () => {
@@ -53,7 +57,7 @@
       ".frame div.absolute img"
     );
     const filteredPhotos = [];
-    
+
     // Replace images with canvas
     await Promise.all(
       Array.from(photoContainers).map((img) => {
@@ -150,40 +154,152 @@
       useCORS: true,
       allowTaint: false,
       scale: 3, // Use device pixel ratio for sharp capture
-      width: 400, // Specify exact dimensions
-      height: 600, // Match your frame size
       backgroundColor: "#ffffff",
       logging: false,
       imageTimeout: 0,
       removeContainer: true,
       foreignObjectRendering: false, // Sometimes helps with quality
-    }).then((a) => {
+    }).then(async (a) => {
       // Create a new canvas at desired output size
-      const outputCanvas = document.createElement('canvas');
-      const outputCtx = outputCanvas.getContext('2d');
-      
+      const outputCanvas = document.createElement("canvas");
+      const outputCtx = outputCanvas.getContext("2d");
+
       // Set output size (you can adjust these for final quality)
-      const outputWidth = 1000;  // 2x the original 400px
+      const outputWidth = 1000; // 2x the original 400px
       const outputHeight = 1500; // 2x the original 600px
-      
+
       outputCanvas.width = outputWidth;
       outputCanvas.height = outputHeight;
-      
+
       // Enable high-quality scaling
       outputCtx.imageSmoothingEnabled = true;
-      outputCtx.imageSmoothingQuality = 'high';
-      
+      outputCtx.imageSmoothingQuality = "high";
+
       // Draw the high-resolution capture onto the output canvas
       outputCtx.drawImage(a, 0, 0, outputWidth, outputHeight);
-      
+
       // Convert to PNG with maximum quality
       const dataUrl = outputCanvas.toDataURL("image/png", 1.0);
+      imageResult = dataUrl;
       photosStore.update((state) => {
         return { ...state, imageResult: dataUrl };
       });
-
-      goto("/song");
+      const resp = await saveToOrder();
     });
+  }
+
+  async function saveToOrder() {
+    if (isSaving) {
+      console.log("[SONG] Already saving, skipping...");
+      return;
+    }
+
+    isSaving = true;
+    try {
+      const form = new FormData();
+
+      // Basic order information
+      form.append("order_id", photoData.order_id || "");
+      if (photoData.background) {
+        form.append("image_id", photoData.background.id || "");
+      }
+      form.append("type", photoData.photoType?.title || "");
+      form.append("ip_id", photoData.photoIp?.id || "");
+      form.append("frame_id", photoData.frameType?.id || "");
+      form.append("price", photoData.photoType?.price || "");
+
+      // Song selection
+      const songId = photoData.selectedSong ? photoData.selectedSong.id : null;
+      form.append("song_id", songId || "");
+
+      console.log("[SONG] Basic form data added");
+
+      // Main processed image
+      if (imageResult) {
+        const imageBlob = base64ToBlob(imageResult, "image/jpeg");
+        if (imageBlob) {
+          form.append("image_result", imageBlob, "processed_image.jpg");
+          console.log("[SONG] Main image added to form");
+        } else {
+          console.error("[SONG] Failed to convert main image");
+        }
+      }
+
+      // Individual photos
+      if (photoData.photos && Array.isArray(photoData.photos)) {
+        const formPhoto = [];
+        photoData.photos.forEach((photo, index) => {
+          if (photo && typeof photo === "string") {
+            const photoBlob = base64ToBlob(photo, "image/jpeg");
+            if (photoBlob) {
+              form.append(`photos[${index}]`, photoBlob, `photo_${index}.jpg`);
+              console.log(`[SONG] Photo ${index} added to form`);
+            }
+          }
+        });
+      } else {
+        console.warn("[SONG] No photos array found or invalid format");
+      }
+
+      // Debug: Log form contents
+      console.log("[SONG] Form data contents:");
+      for (let pair of form.entries()) {
+        console.log(
+          `${pair[0]}:`,
+          pair[1] instanceof Blob ? `Blob (${pair[1].size} bytes)` : pair[1]
+        );
+      }
+
+      // Send to API with retry logic
+      let retryCount = 0;
+      const maxRetries = 1;
+
+      async function attemptCreateOrder() {
+        try {
+          console.log(
+            `[SONG] Attempting to create order (attempt ${retryCount + 1}/${maxRetries + 1})`
+          );
+          const response = await createOrder(form);
+          console.log("[SONG] Order saved successfully:", response);
+          console.log(response);
+
+          photosStore.update((state) => {
+            return {
+              ...state,
+              order_id: response.order_id || state.order_id,
+              share_url: response.data,
+            };
+          });
+
+          // Navigate to result page on success
+          goto("/result");
+        } catch (error) {
+          console.error(
+            `[SONG] Error saving order (attempt ${retryCount + 1}):`,
+            error
+          );
+
+          // if (retryCount < maxRetries) {
+          //   retryCount++;
+          //   console.log(`[SONG] Retrying... (${retryCount}/${maxRetries})`);
+          //   await new Promise((resolve) =>
+          //     setTimeout(resolve, 1000 * retryCount)
+          //   ); // Exponential backoff
+          //   await attemptCreateOrder();
+          // } else {
+          //   console.error("[SONG] Max retries reached. Order creation failed.");
+          //   alert("Failed to save order. Please try again.");
+          //   throw error;
+          // }
+        }
+      }
+      await attemptCreateOrder();
+    } catch (error) {
+      console.error("[SONG] Final error in saveToOrder:", error);
+    } finally {
+      isSaving = false;
+      processSaving = false;
+    }
   }
 
   function startAutoContinueTimer() {
@@ -213,14 +329,6 @@
         Finish
         <span class="loading" class:hidden={!processSaving}></span>
       </button>
-      <!-- 
-    <button
-      on:click={downloadImage}
-      class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
-      class:hidden={!finishStatus}
-    >
-      ⬇️ Download Frame
-    </button> -->
 
       <span
         class="font-bold p-2 bg-base-100 border border-3 border-b-6 border-base-200 rounded-full"
@@ -229,32 +337,42 @@
       </span>
     </div>
 
-    <div class="flex gap-6 p-6 flex-wrap max-h-full">
+    {#if isSaving}
+      <div
+        class="fixed inset-0 bg-black/90 bg-opacity-50 flex items-center justify-center z-50"
+      >
+        <div class="bg-white rounded-lg p-6 text-center">
+          <span class="loading loading-spinner loading-lg mb-4"></span>
+          <p class="text-lg font-semibold">Saving your order...</p>
+          <p class="text-sm text-gray-600">
+            Please wait, this may take a moment
+          </p>
+        </div>
+      </div>
+    {/if}
+
+    <div class="flex gap-6 p-6 flex-wrap h-full">
       {#if frame}
         <div
           class="flex justify-center overflow-hidden flex-shrink-0 w-1/3 rounded-4xl"
         >
-          <div class="p-2 bg-base-200 rounded-md shadow h-min shadow-xl">
-            <div
+          <div class="p-2 bg-base-200 rounded-md h-full shadow-xl">
+            <v
               id="frame"
-              class="frame relative bg-white overflow-hidden object-contain"
-              style="height:600px;width:400px;"
+              class="frame relative bg-white overflow-hidden object-contain h-full aspect-[2/3]"
               on:click={deselectSticker}
             >
-              <img
-                src={frame.image}
-                class="absolute z-10 h-full w-[400px] frame"
-              />
+              <img src={frame.image} class="absolute z-10 size-full frame" />
               {#each frameOptions || [] as t, i}
                 {#if photos[t.image - 1]}
                   <div
                     class="absolute overflow-hidden shadow flex items-center justify-center {t.image}"
-                    style="left:{t.x}px; top:{t.y}px; width:{t.w}px; height:{t.h}px;"
+                    style="left:{t.x}%; top:{t.y}%; width:{t.w}%; height:{t.h}%;"
                   >
                     <img
                       src={photos[t.image - 1] || ""}
                       alt={`Foto ${i}`}
-                      class="h-full w-full object-cover"
+                      class="h-full w-full object-cover object-bottom"
                       crossorigin="anonymous"
                       style="filter:{filterPresets[selectedFilter] || ''}; "
                       data-index={i}
@@ -269,7 +387,7 @@
                       src={photos[t.image - 1] ||
                         "photo-1606107557195-0e29a4b5b4aa.webp"}
                       alt={`Foto ${i}`}
-                      class="h-full w-full object-cover"
+                      class="h-full w-full object-cover object-bottom"
                       crossorigin="anonymous"
                       style="filter:{filterPresets[selectedFilter] || ''}; "
                       data-index={i}
@@ -277,21 +395,22 @@
                   </div>
                 {/if}
               {/each}
-            </div>
+            </v>
           </div>
         </div>
       {/if}
-
-      <div class="h-[75vh] flex-1 rounded-xl overflow-hidden gap-2 w-full">
-        <div class="grid grid-cols-3 gap-5 max-h-full overflow-y-auto">
+      <div
+        class="bg-yellow-100 h-full flex-1 rounded-xl overflow-hidden gap-2 w-full"
+      >
+        <div class="flex flex-wrap gap-5 justify-between overflow-y-auto">
           {#each Object.entries(filterPresets) as [filterName, filterValue]}
             <button
               type="button"
-              class={`w-full flex-shrink-0 cursor-pointer text-center p-3`}
+              class={`w-[200px] aspect-square cursor-pointer text-center p-3`}
               on:click={() => (selectedFilter = filterName)}
             >
               <figure
-                class={`aspect-square w-8/12 overflow-hidden mx-auto rounded-xl shadow ${
+                class={`aspect-square w-full overflow-hidden mx-auto rounded-xl shadow border border-base-100 ${
                   selectedFilter === filterName
                     ? "border-4 border-base-200"
                     : ""

@@ -1,15 +1,16 @@
 <script>
-  import { onDestroy, onMount, tick } from "svelte";
+  import { getContext, onDestroy, onMount, tick } from "svelte";
   import { photosStore, resetPhotoStore } from "../../stores/photos";
   import ModalExtraPrint from "$lib/components/modal/ModalExtraPrint.svelte";
+  import { Volume2Icon, VolumeXIcon } from "svelte-feather-icons";
   import QRCode from "qrcode";
   import { appSettings } from "../../stores/appSetting";
   import { afterNavigate, goto } from "$app/navigation";
   import { postExtraPrint } from "$lib/api/order";
+  import Loading from "$lib/components/Loading.svelte";
 
   let resultPhoto;
   let selectedFrame;
-  let audio;
   let swiperEl;
   let selectedSong;
   let images = [];
@@ -21,6 +22,8 @@
   let isLoading = true;
   let isPrint = false;
 
+  let { muteAudio, isMuted, destroyAudio } = getContext("layoutFunctions");
+
   afterNavigate(() => {
     appSettings.update((state) => {
       return {
@@ -30,6 +33,7 @@
       };
     });
   });
+  $: sharingUrl = $photosStore.share_url || "";
   $: selectedSong = $photosStore?.selectedSong || null;
   $: selectedFrame = $photosStore?.frameType || null;
   $: resultPhoto = $photosStore?.imageResult || null;
@@ -37,7 +41,7 @@
   $: images = $photosStore?.photos || [];
 
   onMount(async () => {
-    QRCode.toDataURL(`http://localhost:5173/order/${$photosStore.order_id}`, {
+    QRCode.toDataURL(sharingUrl, {
       errorCorrectionLevel: "L",
       margin: "2",
       width: "256",
@@ -52,17 +56,15 @@
     await tick();
 
     swiperEl?.initialize();
-    audio.volume = 0.9;
-    audio?.play();
     // await swiperEl?.update();
     // startAutoContinueTimer();
   });
 
   onDestroy(() => {
     clearInterval(autoContinueTimer);
-    if (selectedSong) {
-      audio.pause();
-    }
+
+    destroyAudio();
+    resetPhotoStore();
   });
 
   async function handlePaymentSuccess(data) {
@@ -88,14 +90,6 @@
     formData.append("total_price", data.totalPrice);
 
     const response = await postExtraPrint(formData);
-  }
-
-  function timeUpdated(audio) {
-    // if (audio.currentTime > 15) {
-      // audio.pause();
-      // audio.currentTime = 0;
-      // audio.play();
-    // }
   }
 
   function print() {
@@ -173,29 +167,40 @@
   }
 </script>
 
-<div class="grid grid-cols-2 size-full">
-  {#if !isLoading}
-    <div class="flex flex-col items-center justify-center h-full relative">
-      <div class="absolute top-0 left-0">
-        <span
-          class="inline-flex font-bold p-2 bg-base-100 border-3 rounded-full"
-        >
-          Waktu tersisa {autoContinueCountdown} detik lagi
-        </span>
+{#if !isLoading}
+  <div class="h-full overflow-hidden">
+    <div class="flex justify-between">
+      <!-- <span class="inline-flex font-bold p-2 bg-base-100 border-3 rounded-full">
+        Waktu tersisa {autoContinueCountdown} detik lagi
+      </span> -->
+      <div class="inline-flex font-bold p-2 bg-base-100 border-3 rounded-full">
+        <span>Song : {selectedSong ? selectedSong.title : "None"}</span>
+        <label class="swap ms-2">
+          <input type="checkbox" bind:checked={isMuted} on:change={muteAudio} />
+          <Volume2Icon class="swap-off"></Volume2Icon>
+          <VolumeXIcon class="swap-on"></VolumeXIcon>
+        </label>
       </div>
-      <div class="w-2/3 h-[75%] flex items-center justify-center p-20">
+    </div>
+
+    <div class="grid grid-cols-3 size-full gap-10">
+      <div class="aspect-[4/3] border my-auto flex items-center justify-center">
         <swiper-container
           init="false"
           bind:this={swiperEl}
           loop="true"
           effect="fade"
           autoplay-delay="2000"
-          class="w-full border border-bg-base-200"
+          class="w-full aspect-[4/3]"
         >
           {#if images.length > 0}
             {#each images as v, i}
               <swiper-slide>
-                <img src={v} class="w-full h-full object-cover" />
+                <img
+                  src={v}
+                  alt="Result Photo {i}"
+                  class="h-full object-cover mx-auto"
+                />
               </swiper-slide>
             {/each}
           {:else}
@@ -204,66 +209,57 @@
                 <img
                   src="/photo-1606107557195-0e29a4b5b4aa.webp"
                   class="w-full h-full object-cover"
+                  alt="Result Photo {i}"
                 />
               </swiper-slide>
             {/each}
           {/if}
         </swiper-container>
       </div>
-    </div>
-    <div class="flex items-center justify-center gap-10 h-full overflow-hidden">
       <div
-        class="aspect-[2/3] w-3/6 flex overflow-hidden border-2 border-white rounded-xl"
-        id="print-area"
+        class="overflow-hidden flex flex-col items-center justify-center gap-2 relative mx-auto"
       >
-        <img src={resultPhoto} alt="Print" style="width:100%;height:100%" />
-      </div>
-      <div
-        class="h-full overflow-hidden flex flex-col items-center justify-center gap-2 relative"
-      >
-        <span
-          class="inline-flex font-bold p-2 bg-base-100 border-3 rounded-full absolute top-0 right-0"
-        >
-          Lagu : {selectedSong ? selectedSong.title : "None"}
-        </span>
         <p>Scan QR untuk download file foto</p>
-        <div class=" border border-1 h-[200px] w-[200px]">
-          <img src={QrImage} alt="" />
+        <div class="border-1 w-full aspect-square rounded-xl overflow-hidden">
+          <img src={QrImage} alt="Result Photo With Frame" />
         </div>
         <div class="inline-flex gap-2">
           {#if !isPrint}
             <button
               type="button"
-              class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
+              class="btn bg-base-100 border-base-200 shadow rounded-full border-3 border-b-6 relative"
               on:click={print}>Print</button
             >
           {:else}
             <button
               type="button"
-              class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
+              class="btn bg-base-100 border-base-200 shadow rounded-full border-3 border-b-6 relative"
               on:click={() => (isOpen = true)}
             >
               Extra Print
             </button>
           {/if}
-          <!-- <button
-            type="button"
-            class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
-          >
-            Share
-          </button> -->
+
           <button
             type="button"
-            class="btn bg-base-100 border border-base-200 shadow rounded-full border-3 border-b-6 relative"
+            class="btn bg-base-100 border-base-200 shadow rounded-full border-3 border-b-6 relative"
             on:click={finishSession}
           >
             Selesai
           </button>
         </div>
       </div>
+      <div
+        class="aspect-[2/3] h-8/12 my-auto flex overflow-hidden border-2 border-white rounded-xl mx-auto"
+        id="print-area"
+      >
+        <img src={resultPhoto} alt="Print" style="width:100%;height:100%" />
+      </div>
     </div>
-  {/if}
-</div>
+  </div>
+{:else}
+  <Loading text="Loading..." />
+{/if}
 
 <ModalExtraPrint
   bind:isOpen
@@ -278,12 +274,3 @@
   }}
   {dataQris}
 />
-
-{#if selectedSong}
-  <audio
-    bind:this={audio}
-    src={selectedSong.song_url}
-    autoplay
-    on:timeupdate={() => timeUpdated(audio)}
-  ></audio>
-{/if}
