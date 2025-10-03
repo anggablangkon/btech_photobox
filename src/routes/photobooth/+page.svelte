@@ -299,7 +299,7 @@
       console.error("[STICKER] Failed to load sticker image:", imageSrc);
       alert("Failed to load sticker image");
     };
-
+    imageObj.crossOrigin = "Anonymous";
     imageObj.src = imageSrc;
   }
 
@@ -742,9 +742,7 @@
           </ol>
         </div>
       {:else}
-        <h3 class="text-lg font-semibold mb-4 text-base-200">
-          Photo Preview
-        </h3>
+        <h3 class="text-lg font-semibold mb-4 text-base-200">Photo Preview</h3>
         <div class="flex flex-wrap gap-2 w-full">
           {#each photos as photo, i}
             <button
