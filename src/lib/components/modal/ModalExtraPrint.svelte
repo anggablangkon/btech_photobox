@@ -7,13 +7,6 @@
   import Qris from "../Qris.svelte";
 
   export let isOpen = false;
-  export let photoType = {
-    id: 1,
-    title: "Standard",
-    img: "/Standard.png",
-    description: "Cetakan 4 kali foto",
-    price: "30000",
-  };
 
   // Modern event handlers
   export let onClose = () => {};
