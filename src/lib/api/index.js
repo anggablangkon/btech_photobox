@@ -1,10 +1,14 @@
 class ApiClient {
   constructor(baseURL = "/api") {
-    this.baseURL = baseURL;
+    this.baseURL = import.meta.env.DEV
+      ? baseURL
+      : import.meta.env.VITE_ADMIN_URL + baseURL;
     this.defaultHeaders = {
       "Content-Type": "application/json",
       Accept: "application/json",
     };
+    console.log("[API CLIENT] Initialized with baseURL:", this.baseURL);
+    console.log(import.meta.env.VITE_ADMIN_URL);
   }
 
   /**
