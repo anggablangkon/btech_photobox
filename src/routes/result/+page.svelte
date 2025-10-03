@@ -62,9 +62,8 @@
 
   onDestroy(() => {
     clearInterval(autoContinueTimer);
-    if (selectedSong) {
-      destroyAudio();
-    }
+
+    destroyAudio();
     resetPhotoStore();
   });
 
@@ -171,9 +170,9 @@
 {#if !isLoading}
   <div class="h-full overflow-hidden">
     <div class="flex justify-between">
-      <span class="inline-flex font-bold p-2 bg-base-100 border-3 rounded-full">
+      <!-- <span class="inline-flex font-bold p-2 bg-base-100 border-3 rounded-full">
         Waktu tersisa {autoContinueCountdown} detik lagi
-      </span>
+      </span> -->
       <div class="inline-flex font-bold p-2 bg-base-100 border-3 rounded-full">
         <span>Song : {selectedSong ? selectedSong.title : "None"}</span>
         <label class="swap ms-2">

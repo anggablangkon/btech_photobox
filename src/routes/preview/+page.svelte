@@ -7,7 +7,6 @@
   import { base64ToBlob } from "$lib/helpers/image.js";
   import { createOrder } from "$lib/api/order.js";
   import { appSettings } from "../../stores/appSetting.js";
-
   let photos = [],
     frame,
     frameOptions,
@@ -19,6 +18,7 @@
     processSaving = false,
     finishStatus = false,
     isLoading = true,
+    imageResult = null,
     selectedFrameType = 1;
 
   afterNavigate(() => {
@@ -180,7 +180,7 @@
 
       // Convert to PNG with maximum quality
       const dataUrl = outputCanvas.toDataURL("image/png", 1.0);
-
+      imageResult = dataUrl;
       photosStore.update((state) => {
         return { ...state, imageResult: dataUrl };
       });
@@ -215,8 +215,8 @@
       console.log("[SONG] Basic form data added");
 
       // Main processed image
-      if (photoData.imageResult) {
-        const imageBlob = base64ToBlob(photoData.imageResult, "image/jpeg");
+      if (imageResult) {
+        const imageBlob = base64ToBlob(imageResult, "image/jpeg");
         if (imageBlob) {
           form.append("image_result", imageBlob, "processed_image.jpg");
           console.log("[SONG] Main image added to form");
@@ -357,7 +357,7 @@
           class="flex justify-center overflow-hidden flex-shrink-0 w-1/3 rounded-4xl"
         >
           <div class="p-2 bg-base-200 rounded-md h-full shadow-xl">
-            <div
+            <v
               id="frame"
               class="frame relative bg-white overflow-hidden object-contain h-full aspect-[2/3]"
               on:click={deselectSticker}
@@ -372,7 +372,7 @@
                     <img
                       src={photos[t.image - 1] || ""}
                       alt={`Foto ${i}`}
-                      class="h-full w-full object-cover"
+                      class="h-full w-full object-cover object-bottom"
                       crossorigin="anonymous"
                       style="filter:{filterPresets[selectedFilter] || ''}; "
                       data-index={i}
@@ -387,7 +387,7 @@
                       src={photos[t.image - 1] ||
                         "photo-1606107557195-0e29a4b5b4aa.webp"}
                       alt={`Foto ${i}`}
-                      class="h-full w-full object-cover"
+                      class="h-full w-full object-cover object-bottom"
                       crossorigin="anonymous"
                       style="filter:{filterPresets[selectedFilter] || ''}; "
                       data-index={i}
@@ -395,7 +395,7 @@
                   </div>
                 {/if}
               {/each}
-            </div>
+            </v>
           </div>
         </div>
       {/if}

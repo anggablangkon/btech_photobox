@@ -20,7 +20,6 @@
   $: currentUrl = $photosStore.selectedSong?.song_url || "";
   $: if (currentUrl) {
     audio.src = currentUrl || "";
-    alert("tet");
     audio.play();
   }
 

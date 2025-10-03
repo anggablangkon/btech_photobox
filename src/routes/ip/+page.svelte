@@ -34,7 +34,7 @@
       console.error("Error loading frames:", error);
     }
     isLoading = false;
-    // startCountdownTimer();
+    startCountdownTimer();
   });
 
   onDestroy(() => {

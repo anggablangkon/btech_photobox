@@ -13,12 +13,18 @@ export default defineConfig(({ mode }) => {
       proxy: {
         "/api": {
           target: env.VITE_ADMIN_URL,
+          changeOrigin: true,
+          secure: true,
         },
         "/storage": {
           target: env.VITE_ADMIN_URL,
+          changeOrigin: true,
+          secure: true,
         },
         "/uploads": {
           target: env.VITE_ADMIN_URL,
+          changeOrigin: true,
+          secure: true,
         },
       },
     },

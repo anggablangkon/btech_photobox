@@ -350,7 +350,7 @@
 
   async function takeFrame(index, loop = true) {
     isTakingPhoto = true;
-    captureCountdown = 5;
+    captureCountdown = 10;
     while (captureCountdown > 0) {
       await new Promise((r) => setTimeout(r, 1000));
       captureCountdown -= 1;
@@ -421,8 +421,8 @@
 
   function startNextFrameCountdown() {
     nextFrameCountdown = 5;
-    if (nextFrameCountdown) {
-      clearInterval(nextFrameCountdown);
+    if (autoContinueTimer) {
+      clearInterval(autoContinueTimer);
     }
     autoContinueTimer = setInterval(() => {
       nextFrameCountdown -= 1;
@@ -619,12 +619,20 @@
         {/if}
 
         <button class="btn btn-sm btn-warning" on:click={clearAllStickers}>
-          Clear All
+          Clear All Sticker
         </button>
 
         <button class="btn btn-sm btn-outline" on:click={deselectSticker}>
-          Deselect
+          Deselect Sticker
         </button>
+      </div>
+
+      <div
+        class="bg-base-100 px-4 py-2 text-white font-bold rounded-full flex items-center justify-center mt-5 border-base-200 border-3 border-b-6 mx-auto"
+      class:hidden={!isTakingPhoto}>
+        <h1 class="text-2xl">
+          Please make sure your position is at the center of the frame
+        </h1>
       </div>
 
       <div
@@ -647,12 +655,12 @@
           />
           <img src={photoPreview} alt="PHOTO PREVIEW" class="rounded-2xl" />
         </div>
-        <button
+        <!-- <button
           class="btn btn-lg bg-base-100 border-3 border-b-6 border-base-200 rounded-full mt-4 mx-auto"
           class:hidden={isTakingPhoto || previewResult}
           on:click={() => (isRetake ? goNextFrameRetake() : goNextFrame())}
           >Selanjutnya</button
-        >
+        > -->
       </div>
     </div>
 
@@ -674,7 +682,7 @@
               src={photos[t.image - 1] ||
                 "photo-1606107557195-0e29a4b5b4aa.webp"}
               alt={`Foto ${i}`}
-              class="h-full w-full object-cover"
+              class="h-full w-full object-cover object-bottom"
               crossorigin="anonymous"
             />
           </div>
@@ -685,13 +693,11 @@
     <div
       class="bg-pink-200 flex flex-col rounded-xl p-5 shadow border-base-100 border-4"
     >
-      {#if !previewResult}
+      {#if !previewResult && isTakingPhoto}
         <h3 class="text-lg text-base-200 font-bold mb-4">
           Drag Stickers to Camera
         </h3>
-        <div
-          class="flex flex-wrap items-center gap-3 pb-2 overflow-auto"
-        >
+        <div class="flex flex-wrap items-center gap-3 pb-2 overflow-auto">
           {#if stickerLists && stickerLists.length > 0}
             {#each stickerLists as sticker, i}
               <button
@@ -730,11 +736,13 @@
           </ol>
         </div>
       {:else}
-        <h3 class="text-lg text-white font-semibold mb-4">Photo Preview</h3>
+        <h3 class="text-lg text-white font-semibold mb-4 text-base-200">
+          Photo Preview
+        </h3>
         <div class="flex flex-wrap gap-2 w-full">
           {#each photos as photo, i}
             <button
-              class="w-[200px] aspect-[4/3] rounded-xl overflow-hidden cursor-pointer p-2 relative {retakePhotos.includes(
+              class="w-[200px] aspect-[4/3] rounded-xl cursor-pointer p-2 relative {retakePhotos.includes(
                 i
               )
                 ? 'bg-amber-200'
@@ -752,11 +760,19 @@
                 </span>
               {/if}
 
-              <img
-                class="h-full w-full object-cover"
-                src={photo}
-                alt="Foto 0"
-              />
+              {#if photo == null}
+                <div
+                  class="w-full h-full flex items-center justify-center bg-gray-100 rounded-lg"
+                >
+                  <span class="text-sm">Photo {i + 1}</span>
+                </div>
+              {:else}
+                <img
+                  class="h-full w-full object-cover object-bottom"
+                  src={photo}
+                  alt="Foto 0"
+                />
+              {/if}
             </button>
           {/each}
         </div>

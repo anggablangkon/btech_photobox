@@ -75,7 +75,6 @@
           isPaused[i] = true;
         } else {
           a.currentTime = 0;
-          a.volume = 0.15;
           a.play();
           isPaused[i] = false;
         }
