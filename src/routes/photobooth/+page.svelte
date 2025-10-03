@@ -256,8 +256,6 @@
     console.log("[STICKER] Creating sticker at position:", x, y);
 
     const imageObj = new Image();
-    imageObj.crossOrigin = "anonymous";
-
     imageObj.onload = function () {
       // Calculate appropriate size
       const maxSize = Math.min(stage.width(), stage.height()) * 0.2;
