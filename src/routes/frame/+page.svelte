@@ -8,7 +8,7 @@
     ArrowLeftCircleIcon,
     ArrowRightCircleIcon,
   } from "svelte-feather-icons";
-  import { getFrames } from "$lib/api/frame";
+  import { getFramesByIpId } from "$lib/api/frame";
   import { getAssetUrl } from "$lib/helpers/image";
 
   let autoContinueTimer;
@@ -32,7 +32,7 @@
   $: selectedIp = $photosStore?.photoIp || null;
 
   onMount(async () => {
-    frames = await getFrames({ ip_id: selectedIp.id });
+    frames = await getFramesByIpId(selectedIp.id);
     isLoading = false;
     startCountdownTimer();
   });

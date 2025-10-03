@@ -103,7 +103,7 @@ export async function getFrameById(frameId) {
  */
 export async function getFramesByIpId(ipId) {
   try {
-    const response = await apiClient.get(`/frames?ip_id=${ipId}`);
+    const response = await apiClient.get(`/photobox/ip-frame?ip_id=${ipId}`);
     return response.frames || response.data || response;
   } catch (error) {
     // Fallback to static data filtered by ip_id

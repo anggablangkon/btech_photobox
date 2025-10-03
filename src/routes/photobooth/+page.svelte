@@ -573,7 +573,7 @@
 
 <canvas bind:this={canvas} style="display:none;"></canvas>
 {#if !isLoading}
-  <div class="size-full grid grid-cols-2 overflow-auto py-3 gap-4">
+  <div class="size-full grid grid-cols-2 overflow-auto py-3 gap-4 relative">
     <!-- Video and Canvas Container -->
     <div class="grid my-auto" class:hidden={previewResult}>
       {#if captureCountdown > 0}
@@ -628,10 +628,10 @@
       </div>
 
       <div
-        class="bg-base-100 px-4 py-2 text-white font-bold rounded-full flex items-center justify-center mt-5 border-base-200 border-3 border-b-6 mx-auto"
+        class="bg-base-100  px-4 py-2 text-white font-bold rounded-full flex items-center justify-center mt-5 border-base-200 border-3 border-b-6"
         class:hidden={!isTakingPhoto}
       >
-        <h1 class="text-2xl">
+        <h1 class="">
           Please make sure your position is at the center of the frame
         </h1>
       </div>
@@ -695,13 +695,15 @@
     </div>
 
     <div
-      class="bg-pink-200 flex flex-col rounded-xl p-5 shadow border-base-100 border-4"
+      class="bg-pink-200 flex flex-col justify-between gap-5 rounded-xl p-5 shadow border-base-100 border-4"
     >
       {#if !previewResult && isTakingPhoto}
         <h3 class="text-lg text-base-200 font-bold mb-4">
           Drag Stickers to Camera
         </h3>
-        <div class="flex flex-wrap items-center gap-3 pb-2 overflow-auto">
+        <div
+          class="flex flex-wrap items-center gap-3 pb-2 overflow-auto h-3/6 my-2"
+        >
           {#if stickerLists && stickerLists.length > 0}
             {#each stickerLists as sticker, i}
               <button
@@ -733,7 +735,7 @@
             </div>
           {/if}
         </div>
-        <div class="mt-auto bg-amber-100 relative p-4">
+        <div class="align-bottom bg-amber-100 relative p-4">
           <ol class="list-decimal p-4">
             <li>Drag stickers onto the photo</li>
             <li>Resize and position the stickers as desired</li>
