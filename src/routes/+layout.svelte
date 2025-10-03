@@ -4,6 +4,7 @@
   import { register } from "swiper/element/bundle";
   import { appSettings } from "../stores/appSetting";
   import { photosStore } from "../stores/photos";
+  import { getSongUrl } from "$lib/helpers/song";
 
   let title;
   let background = "";

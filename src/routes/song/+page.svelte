@@ -5,7 +5,8 @@
   import { afterNavigate, goto } from "$app/navigation";
   import { appSettings } from "../../stores/appSetting";
   import { getSongById } from "$lib/api/songs";
-
+  import { getAssetUrl } from "$lib/helpers/image";
+  import { getSongUrl } from "$lib/helpers/song";
 
   // store references to <audio>
   let audio = [];
@@ -148,7 +149,7 @@
 
     // Wait for store to update
     await tick();
-    
+
     goto("/frame");
   }
 </script>

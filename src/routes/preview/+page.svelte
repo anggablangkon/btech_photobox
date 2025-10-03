@@ -4,7 +4,7 @@
   import { onMount, onDestroy, tick } from "svelte";
   import html2canvas from "html2canvas-pro";
   import { filterPresets } from "$lib/filterPresets.js";
-  import { base64ToBlob } from "$lib/helpers/image.js";
+  import { base64ToBlob, getAssetUrl } from "$lib/helpers/image.js";
   import { createOrder } from "$lib/api/order.js";
   import { appSettings } from "../../stores/appSetting.js";
   let photos = [],
@@ -357,12 +357,12 @@
           class="flex justify-center overflow-hidden flex-shrink-0 w-1/3 rounded-4xl"
         >
           <div class="p-2 bg-base-200 rounded-md h-full shadow-xl">
-            <v
+            <div
               id="frame"
               class="frame relative bg-white overflow-hidden object-contain h-full aspect-[2/3]"
               on:click={deselectSticker}
             >
-              <img src={frame.image} class="absolute z-10 size-full frame" />
+              <img src={getAssetUrl(frame.image)} class="absolute z-10 size-full frame" />
               {#each frameOptions || [] as t, i}
                 {#if photos[t.image - 1]}
                   <div
@@ -395,7 +395,7 @@
                   </div>
                 {/if}
               {/each}
-            </v>
+            </div>
           </div>
         </div>
       {/if}

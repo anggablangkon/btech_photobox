@@ -46,6 +46,10 @@
     await createQris();
   });
 
+  function next() {
+    goto("/ip");
+  }
+
   onDestroy(() => {
     // clearAllIntervals();
   });
@@ -76,6 +80,7 @@
 
       isLoading = false;
     } catch (error) {
+      isLoading = false;
       console.error("Error creating QRIS:", error);
       alert("Gagal membuat kode pembayaran. Silakan coba lagi.");
     }
@@ -108,36 +113,18 @@
     class="size-full grid grid-cols-2 justify-center relative mx-auto overflow-auto my-auto p-10"
   >
     <CardProduct {photoType}></CardProduct>
-    <!-- <div class="p-2 min-w-[500px]">
-      <div
-        class="aspect-[4/6] h-full max-h-[800px] p-2 bg-white rounded-xl text-center shadow-xl"
-      >
-        <h1 class="text-3xl mb-2">{photoType.title}</h1>
-        <div class="overflow-hidden">
-          <img
-            src={photoType.img}
-            alt={photoType.title}
-            class="w-10/12 mx-auto object-contain bg-base-200 p-2 rounded-xl"
-          />
-        </div>
-        <p class="mt-3 text-gray-500">
-          {photoType.description}
-        </p>
-        <span
-          class="mb-3 inline-flex font-bold bg-red-600 text-white rounded-xl py-1 px-2 mt-2"
-        >
-          Rp{parseInt(photoType.price).toLocaleString("id-ID")}
-        </span>
-      </div>
-    </div> -->
 
-    <div class="overflow-auto p-2">
+    <div class="overflow-auto p-2 text-center">
       <Qris
         {dataQris}
         onExpiredTime={handleExpiredTime}
         onPaymentSuccess={handlePaymentSuccess}
         onCreateNewQris={reloadQris}
       />
+
+      <button class="mx-auto my-4 btn btn-primary" on:click={next}
+        >Lanjut mas
+      </button>
     </div>
   </div>
 {:else}

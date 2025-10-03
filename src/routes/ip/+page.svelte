@@ -9,6 +9,7 @@
   } from "svelte-feather-icons";
   import { appSettings } from "../../stores/appSetting";
   import { getIps } from "$lib/api/ips";
+  import { getAssetUrl } from "$lib/helpers/image";
 
   let selectedType;
   let autoCountdownTimer = null;
@@ -114,8 +115,8 @@
                 on:click={() => onSelectIp(ip)}
               >
                 <img
-                  src={ip.image}
-                  alt={ip.image}
+                  src={getAssetUrl(ip.image)}
+                  alt={getAssetUrl(ip.image)}
                   class="object-cover h-full w-full"
                 />
               </button>
