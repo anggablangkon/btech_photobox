@@ -9,6 +9,7 @@
     ArrowRightCircleIcon,
   } from "svelte-feather-icons";
   import { getFrames } from "$lib/api/frame";
+  import { getAssetUrl } from "$lib/helpers/image";
 
   let autoContinueTimer;
   let autoCountdownTimer;
@@ -111,7 +112,7 @@
                   class="aspect-[2/3] h-full overflow-hidden flex bg-amber-800"
                 >
                   <img
-                    src={frame.image}
+                    src={getAssetUrl(frame.image)}
                     alt="/frame/Styling 1.png"
                     class="object-cover w-full h-full"
                   />

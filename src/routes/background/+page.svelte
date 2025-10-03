@@ -5,6 +5,7 @@
   import { appSettings } from "../../stores/appSetting";
   import { getBackgroundById, getBackgroundsByIpId } from "$lib/api/background";
   import Konva from "konva";
+  import { getAssetUrl } from "$lib/helpers/image";
 
   let autoContinueTimer;
   let autoCountdownTimer;
@@ -425,12 +426,12 @@
           {#each stickerLists as sticker, i}
             <button
               class="h-40 aspect-square flex-shrink-0 border-3 border-gray-300 rounded-xl overflow-hidden hover:border-blue-500 transition-colors cursor-grab active:cursor-grabbing"
-              on:mousedown={(e) => startStickerDrag(e, sticker.image)}
-              on:touchstart={(e) => startStickerDrag(e, sticker.image)}
+              on:mousedown={(e) => startStickerDrag(e, getAssetUrl(sticker.image))}
+              on:touchstart={(e) => startStickerDrag(e, getAssetUrl(sticker.image))}
             >
               {#if sticker.image}
                 <img
-                  src={sticker.image}
+                  src={getAssetUrl(sticker.image)}
                   alt="Sticker {i + 1}"
                   class="w-full h-full object-cover pointer-events-none"
                   draggable="false"

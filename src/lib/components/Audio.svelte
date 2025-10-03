@@ -1,4 +1,5 @@
 <script>
+  import { getSongUrl } from "$lib/helpers/song";
   import { onMount, onDestroy } from "svelte";
 
   export let selectedSong = null;
@@ -63,7 +64,7 @@
 {#if selectedSong}
   <audio
     bind:this={audio}
-    src={selectedSong.song_url}
+    src={getSongUrl(selectedSong.song_url)}
     {loop}
     autoplay
     on:timeupdate={timeUpdated}

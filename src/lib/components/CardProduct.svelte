@@ -1,4 +1,6 @@
 <script>
+  import { getAssetUrl } from "$lib/helpers/image";
+
   export let photoType;
   export let onSelect = null;
 
@@ -20,7 +22,11 @@
   >
     <h1 class="mb-auto mb-3 font-bold text-xl mt-3">{photoType.title}</h1>
     <div class="bg-base-200 p-0 items-center rounded-xl overflow-hidden">
-      <img src={photoType.img} alt="" class="h-full mx-auto object-cover" />
+      <img
+        src={photoType.img}
+        alt=""
+        class="h-full mx-auto object-cover"
+      />
     </div>
     <div class="card-footer mt-auto">
       <p class="text-white-500 text-center mx-auto">
@@ -40,7 +46,7 @@
   >
     <h1 class="mb-auto mb-3 font-bold text-xl mt-3">{photoType.title}</h1>
     <div class="bg-base-200 p-0 items-center rounded-xl overflow-hidden">
-      <img src={photoType.img} alt="" class="h-full mx-auto object-cover" />
+      <img src={getAssetUrl(photoType.img)} alt="" class="h-full mx-auto object-cover" />
     </div>
     <div class="card-footer mt-auto">
       <p class="text-white-500 text-center mx-auto">

@@ -4,7 +4,7 @@
   import { photoOptions, photosStore } from "../../stores/photos";
   import { appSettings } from "../../stores/appSetting";
   import { getBackgroundsByIpId } from "$lib/api/background";
-  import { loadImageWithCORS } from "$lib/helpers/image.js";
+  import { getAssetUrl, loadImageWithCORS } from "$lib/helpers/image.js";
   import Konva from "konva";
 
   let autoContinueTimer,
@@ -629,7 +629,8 @@
 
       <div
         class="bg-base-100 px-4 py-2 text-white font-bold rounded-full flex items-center justify-center mt-5 border-base-200 border-3 border-b-6 mx-auto"
-      class:hidden={!isTakingPhoto}>
+        class:hidden={!isTakingPhoto}
+      >
         <h1 class="text-2xl">
           Please make sure your position is at the center of the frame
         </h1>
@@ -672,7 +673,10 @@
         id="frame"
         class="frame relative shadow-lg overflow-hidden object-contain h-full aspect-2/3"
       >
-        <img src={frameLayout.image} class="absolute z-10 h-full" />
+        <img
+          src={getAssetUrl(frameLayout.image)}
+          class="absolute z-10 h-full"
+        />
         {#each frameOptions || [] as t, i}
           <div
             class="absolute overflow-hidden shadow flex items-center justify-center {t.image}"
@@ -702,12 +706,14 @@
             {#each stickerLists as sticker, i}
               <button
                 class="h-40 aspect-square flex-shrink-0 border-3 border-base-200 rounded-xl overflow-hidden hover:border-blue-500 transition-colors cursor-grab active:cursor-grabbing"
-                on:mousedown={(e) => startStickerDrag(e, sticker.image)}
-                on:touchstart={(e) => startStickerDrag(e, sticker.image)}
+                on:mousedown={(e) =>
+                  startStickerDrag(e, getAssetUrl(sticker.image))}
+                on:touchstart={(e) =>
+                  startStickerDrag(e, getAssetUrl(sticker.image))}
               >
                 {#if sticker.image}
                   <img
-                    src={sticker.image}
+                    src={getAssetUrl(sticker.image)}
                     alt="Sticker {i + 1}"
                     class="w-full h-full object-cover pointer-events-none"
                     draggable="false"

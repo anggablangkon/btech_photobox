@@ -212,7 +212,7 @@
             class="aspect-[2/3] w-full max-w-md mx-auto rounded-xl overflow-hidden shadow-lg"
           >
             <img
-              src={"/" + order.result.image_path}
+              src={order.result.image_path}
               alt="Final result"
               class="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
             />
