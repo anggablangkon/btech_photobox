@@ -194,7 +194,7 @@
         return { ...state, imageResult: dataUrl };
       });
       processSaving = false;
-      // const resp = await saveToOrder();
+      const resp = await saveToOrder();
       goto("/result");
     });
   }
