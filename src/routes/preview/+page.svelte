@@ -159,7 +159,7 @@
       return;
     }
     html2canvas(node, {
-      useCORS: true,
+      useCORS: false,
       allowTaint: false,
       scale: 3, // Use device pixel ratio for sharp capture
       backgroundColor: "#ffffff",
@@ -190,18 +190,12 @@
       const dataUrl = outputCanvas.toDataURL("image/png", 1.0);
       imageResult = dataUrl;
 
-      const downloadLink = document.createElement("a");
-      downloadLink.href = dataUrl;
-      downloadLink.download = "photobooth_image.png";
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-
       photosStore.update((state) => {
         return { ...state, imageResult: dataUrl };
       });
       processSaving = false;
       // const resp = await saveToOrder();
-      // goto("/result");
+      goto("/result");
     });
   }
 

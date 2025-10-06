@@ -142,10 +142,10 @@
 
     if (!stickerImage) return;
 
-    draggedSticker = stickerImage;
+    draggedSticker = getAssetUrl(stickerImage);
 
     // Create drag preview element
-    createDragPreview(event, stickerImage);
+    createDragPreview(event, getAssetUrl(stickerImage));
   }
 
   function createDragPreview(event, imageSrc) {
@@ -348,7 +348,7 @@
 
   async function takeFrame(index, loop = true) {
     isTakingPhoto = true;
-    captureCountdown = 2;
+    captureCountdown = 5;
     while (captureCountdown > 0) {
       await new Promise((r) => setTimeout(r, 1000));
       captureCountdown -= 1;
