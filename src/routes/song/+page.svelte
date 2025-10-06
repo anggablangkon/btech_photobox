@@ -189,7 +189,7 @@
                   on:timeupdate={() => handleTimeUpdate(i)}
                   controls
                   height="20px"
-                />
+                ></audio>
 
                 <button
                   type="button"

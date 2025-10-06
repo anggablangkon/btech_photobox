@@ -256,6 +256,7 @@
     console.log("[STICKER] Creating sticker at position:", x, y);
 
     const imageObj = new Image();
+    imageObj.crossOrigin = "anonymous";
     imageObj.onload = function () {
       // Calculate appropriate size
       const maxSize = Math.min(stage.width(), stage.height()) * 0.2;
@@ -294,13 +295,12 @@
       // Auto-select the newly created sticker
       selectSticker(konvaImage);
     };
+    imageObj.src = imageSrc;
 
     imageObj.onerror = function () {
       console.error("[STICKER] Failed to load sticker image:", imageSrc);
       alert("Failed to load sticker image");
     };
-    imageObj.crossOrigin = "Anonymous";
-    imageObj.src = imageSrc;
   }
 
   function selectSticker(sticker) {
@@ -337,7 +337,7 @@
   }
 
   function finishSession() {
-    deselectSticker();
+    // deselectSticker();
     const dataURL = stage.toDataURL({ pixelRatio: 3 });
 
     photosStore.update((state) => {
@@ -348,7 +348,7 @@
 
   async function takeFrame(index, loop = true) {
     isTakingPhoto = true;
-    captureCountdown = 10;
+    captureCountdown = 2;
     while (captureCountdown > 0) {
       await new Promise((r) => setTimeout(r, 1000));
       captureCountdown -= 1;
@@ -685,7 +685,6 @@
                 "photo-1606107557195-0e29a4b5b4aa.webp"}
               alt={`Foto ${i}`}
               class="h-full w-full object-cover object-bottom"
-              crossorigin="anonymous"
             />
           </div>
         {/each}
@@ -693,47 +692,46 @@
     </div>
 
     <div
-      class="bg-pink-200 flex flex-col gap-5 rounded-xl p-5 shadow border-base-100 border-4"
+      class="bg-pink-200 flex flex-col gap-5 rounded-xl p-5 shadow border-base-100 border-4 h-full overflow-hidden"
     >
       {#if !previewResult && isTakingPhoto}
         <h3 class="text-lg text-base-200 font-bold mb-4">
           Drag Stickers to Camera
         </h3>
-        <div
-          class="flex flex-wrap items-center gap-3 pb-2 overflow-auto h-3/6 my-2"
-        >
-          {#if stickerLists && stickerLists.length > 0}
-            {#each stickerLists as sticker, i}
-              <button
-                class="h-40 aspect-square flex-shrink-0 border-3 border-base-200 rounded-xl overflow-hidden hover:border-blue-500 transition-colors cursor-grab active:cursor-grabbing"
-                on:mousedown={(e) =>
-                  startStickerDrag(e, getAssetUrl(sticker.image))}
-                on:touchstart={(e) =>
-                  startStickerDrag(e, getAssetUrl(sticker.image))}
-              >
-                {#if sticker.image}
-                  <img
-                    src={getAssetUrl(sticker.image)}
-                    alt="Sticker {i + 1}"
-                    class="w-full h-full object-cover pointer-events-none"
-                    draggable="false"
-                  />
-                {:else}
-                  <div
-                    class="w-full h-full flex items-center justify-center bg-gray-100"
-                  >
-                    <span class="text-xs">No Image</span>
-                  </div>
-                {/if}
-              </button>
-            {/each}
-          {:else}
-            <div class="text-gray-500 text-center py-4">
-              No stickers available
-            </div>
-          {/if}
+        <div class="overflow-y-auto">
+          <div class="flex flex-wrap items-center gap-3 pb-2 my-2">
+            {#if stickerLists && stickerLists.length > 0}
+              {#each stickerLists as sticker, i}
+                <button
+                  class="h-40 aspect-square flex-shrink-0 border-3 border-base-200 rounded-xl overflow-hidden hover:border-blue-500 transition-colors cursor-grab active:cursor-grabbing"
+                  on:mousedown={(e) => startStickerDrag(e, sticker.image)}
+                  on:touchstart={(e) => startStickerDrag(e, sticker.image)}
+                >
+                  {#if sticker.image}
+                    <img
+                      src={getAssetUrl(sticker.image)}
+                      alt="Sticker {i + 1}"
+                      class="w-full h-full object-cover pointer-events-none"
+                      draggable="false"
+                    />
+                  {:else}
+                    <div
+                      class="w-full h-full flex items-center justify-center bg-gray-100"
+                    >
+                      <span class="text-xs">No Image</span>
+                    </div>
+                  {/if}
+                </button>
+              {/each}
+            {:else}
+              <div class="text-gray-500 text-center py-4">
+                No stickers available
+              </div>
+            {/if}
+          </div>
         </div>
-        <div class="bg-amber-100 relative p-4">
+
+        <div class="bg-amber-100 relative p-4 mt-auto">
           <ol class="list-decimal p-4">
             <li>Drag stickers onto the photo</li>
             <li>Resize and position the stickers as desired</li>

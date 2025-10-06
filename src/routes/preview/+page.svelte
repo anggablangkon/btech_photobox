@@ -4,7 +4,11 @@
   import { onMount, onDestroy, tick } from "svelte";
   import html2canvas from "html2canvas-pro";
   import { filterPresets } from "$lib/filterPresets.js";
-  import { base64ToBlob, getAssetUrl } from "$lib/helpers/image.js";
+  import {
+    base64ToBlob,
+    getAssetUrl,
+    loadImageWithCORS,
+  } from "$lib/helpers/image.js";
   import { createOrder } from "$lib/api/order.js";
   import { appSettings } from "../../stores/appSetting.js";
   let photos = [],
@@ -106,7 +110,7 @@
             const sh = ih * scale;
 
             const dx = (cw - sw) / 2;
-            const dy = (ch - sh) / 2;
+            const dy = ch - sh;
 
             // Draw with high quality settings
             ctx.imageSmoothingEnabled = true;
@@ -122,6 +126,7 @@
             canvas.style.width = displayWidth + "px";
             canvas.style.height = displayHeight + "px";
             canvas.style.objectFit = "cover";
+            canvas.style.objectPosition = "bottom";
 
             // Copy any relevant attributes from the original image
             canvas.className = img.className;
@@ -143,6 +148,9 @@
         });
       })
     );
+
+    await generateFrameImage(node);
+
     await tick();
 
     if (!node) {
@@ -181,10 +189,69 @@
       // Convert to PNG with maximum quality
       const dataUrl = outputCanvas.toDataURL("image/png", 1.0);
       imageResult = dataUrl;
+
+      const downloadLink = document.createElement("a");
+      downloadLink.href = dataUrl;
+      downloadLink.download = "photobooth_image.png";
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+
       photosStore.update((state) => {
         return { ...state, imageResult: dataUrl };
       });
-      const resp = await saveToOrder();
+      processSaving = false;
+      // const resp = await saveToOrder();
+      // goto("/result");
+    });
+  }
+
+  async function generateFrameImage(node) {
+    const frameImg = new Image();
+    frameImg.crossOrigin = "anonymous";
+    frameImg.src = frame.image;
+
+    const frameCanvasReady = new Promise((resolve) => {
+      frameImg.onload = () => {
+        const frameCanvas = document.createElement("canvas");
+        const ctx = frameCanvas.getContext("2d");
+
+        // Match canvas to container (.frame-wallpaper)
+        const frameEl = document.querySelector(".frame-wallpaper");
+        const cw = node.offsetWidth;
+        const ch = node.offsetHeight;
+        frameCanvas.width = cw;
+        frameCanvas.height = ch;
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high ";
+
+        const iw = frameEl?.clientWidth;
+        const ih = frameEl?.clientHeight;
+
+        // Center the image without resizing
+        const dx = (cw - iw) / 2;
+        const dy = (ch - ih) / 2;
+
+        // Draw image at its original size
+        ctx.drawImage(frameImg, dx, dy, iw, ih);
+
+        // Style and position
+        frameCanvas.style.position = "absolute";
+        frameCanvas.style.top = frameEl.offsetTop + "px";
+        frameCanvas.style.left = frameEl.offsetLeft + "px";
+        frameCanvas.style.width = `${cw}px`;
+        frameCanvas.style.height = `${ch}px`;
+        frameCanvas.style.zIndex = "1";
+
+        node.insertBefore(frameCanvas, node.firstChild);
+        frameEl?.remove();
+        resolve();
+      };
+
+      frameImg.onerror = () => {
+        console.error("Failed to load frame.image s");
+        resolve(); // Continue without blocking
+      };
     });
   }
 
@@ -272,7 +339,7 @@
           });
 
           // Navigate to result page on success
-          goto("/result");
+          // goto("/result");
         } catch (error) {
           console.error(
             `[SONG] Error saving order (attempt ${retryCount + 1}):`,
@@ -360,9 +427,13 @@
             <div
               id="frame"
               class="frame relative bg-white overflow-hidden object-contain h-full aspect-[2/3]"
-              on:click={deselectSticker}
             >
-              <img src={getAssetUrl(frame.image)} class="absolute z-10 size-full frame" />
+              <img
+                src={getAssetUrl(frame.image)}
+                class="absolute z-10 size-full frame-wallpaper"
+                crossorigin="anonymous"
+                alt={frame.name}
+              />
               {#each frameOptions || [] as t, i}
                 {#if photos[t.image - 1]}
                   <div
@@ -407,6 +478,7 @@
             <button
               type="button"
               class={`w-[200px] aspect-square cursor-pointer text-center p-3`}
+              disabled={processSaving}
               on:click={() => (selectedFilter = filterName)}
             >
               <figure

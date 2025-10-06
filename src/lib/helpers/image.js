@@ -1,7 +1,7 @@
 export function loadImageWithCORS(url) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "Anonymous"; // This enables CORS
+    img.crossOrigin = "anonymous"; // This enables CORS
     img.onload = () => resolve(img);
     img.onerror = (err) => reject(err);
     img.src = url;
@@ -38,6 +38,7 @@ export function base64ToBlob(base64Data, contentType = "image/jpeg") {
     return null;
   }
 }
+
 
 export function getAssetUrl(relativePath = "") {
   if (import.meta.env.DEV) {

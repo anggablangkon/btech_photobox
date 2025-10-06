@@ -68,5 +68,5 @@
     {loop}
     autoplay
     on:timeupdate={timeUpdated}
-  />
+  ></audio>
 {/if}
