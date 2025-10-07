@@ -79,6 +79,14 @@ export async function createFrame(frameData) {
   }
 }
 
+export function createBackgroundUrl(fileName) {
+  const imageUrl =
+    (apiClient.baseURL ?? "http://localhost:8000/api") +
+    "/photobox/wallpaper/get-file/" +
+    fileName;
+  return imageUrl;
+}
+
 /**
  * Update frame
  * @param {number} frameId - Frame ID

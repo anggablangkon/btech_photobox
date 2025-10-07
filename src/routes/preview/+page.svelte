@@ -11,6 +11,7 @@
   } from "$lib/helpers/image.js";
   import { createOrder } from "$lib/api/order.js";
   import { appSettings } from "../../stores/appSetting.js";
+  import { createFrameUrl } from "$lib/api/frame.js";
   let photos = [],
     frame,
     frameOptions,
@@ -44,7 +45,6 @@
   onMount(async () => {
     await tick();
     isLoading = false;
-    console.log(photos, photoOptions);
     startAutoContinueTimer();
   });
 
@@ -190,9 +190,15 @@
       const dataUrl = outputCanvas.toDataURL("image/png", 1.0);
       imageResult = dataUrl;
 
+      const download = document.createElement("a");
+      download.href = dataUrl;
+      download.download = "photobox_image.png";
+      download.click(); // Uncomment to auto-download
+
       photosStore.update((state) => {
         return { ...state, imageResult: dataUrl };
       });
+
       processSaving = false;
       const resp = await saveToOrder();
       goto("/result");
@@ -202,9 +208,8 @@
   async function generateFrameImage(node) {
     const frameImg = new Image();
     frameImg.crossOrigin = "anonymous";
-    frameImg.src = frame.image;
-
-    const frameCanvasReady = new Promise((resolve) => {
+    frameImg.src = createFrameUrl(frame.id);
+    return new Promise((resolve) => {
       frameImg.onload = () => {
         const frameCanvas = document.createElement("canvas");
         const ctx = frameCanvas.getContext("2d");
@@ -235,10 +240,10 @@
         frameCanvas.style.left = frameEl.offsetLeft + "px";
         frameCanvas.style.width = `${cw}px`;
         frameCanvas.style.height = `${ch}px`;
-        frameCanvas.style.zIndex = "1";
+        frameCanvas.style.zIndex = "10";
 
-        node.insertBefore(frameCanvas, node.firstChild);
-        frameEl?.remove();
+        node.replaceChild(frameCanvas, frameEl);
+
         resolve();
       };
 
@@ -425,7 +430,6 @@
               <img
                 src={getAssetUrl(frame.image)}
                 class="absolute z-10 size-full frame-wallpaper"
-                crossorigin="anonymous"
                 alt={frame.name}
               />
               {#each frameOptions || [] as t, i}

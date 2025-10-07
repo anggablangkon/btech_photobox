@@ -3,7 +3,10 @@
   import { onDestroy, onMount, tick } from "svelte";
   import { photoOptions, photosStore } from "../../stores/photos";
   import { appSettings } from "../../stores/appSetting";
-  import { getBackgroundsByIpId } from "$lib/api/background";
+  import {
+    createBackgroundUrl,
+    getBackgroundsByIpId,
+  } from "$lib/api/background";
   import { getAssetUrl, loadImageWithCORS } from "$lib/helpers/image.js";
   import Konva from "konva";
 
@@ -253,10 +256,13 @@
   }
 
   function createStickerAtPosition(imageSrc, x, y) {
-    console.log("[STICKER] Creating sticker at position:", x, y);
+    const imageName = imageSrc.split("/").pop();
 
+    const imageUrl = createBackgroundUrl(imageName);
+    console.log(imageUrl);
     const imageObj = new Image();
     imageObj.crossOrigin = "anonymous";
+
     imageObj.onload = function () {
       // Calculate appropriate size
       const maxSize = Math.min(stage.width(), stage.height()) * 0.2;
@@ -295,9 +301,9 @@
       // Auto-select the newly created sticker
       selectSticker(konvaImage);
     };
-    imageObj.src = imageSrc;
+    imageObj.src = imageUrl;
 
-    imageObj.onerror = function () {
+    imageObj.onerror = function (error) {
       console.error("[STICKER] Failed to load sticker image:", imageSrc);
       alert("Failed to load sticker image");
     };
@@ -348,7 +354,7 @@
 
   async function takeFrame(index, loop = true) {
     isTakingPhoto = true;
-    captureCountdown = 5;
+    captureCountdown = 10;
     while (captureCountdown > 0) {
       await new Promise((r) => setTimeout(r, 1000));
       captureCountdown -= 1;

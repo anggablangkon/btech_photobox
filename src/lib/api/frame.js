@@ -126,6 +126,15 @@ export async function createFrame(frameData) {
   }
 }
 
+export function createFrameUrl(frameId) {
+  const imageUrl =
+    (apiClient.baseURL ?? "http://localhost:8000/api") +
+    "/photobox/frame/get-file/" +
+    frameId;
+  console.log(apiClient.baseURL);
+  return imageUrl;
+}
+
 /**
  * Update frame
  * @param {number} frameId - Frame ID

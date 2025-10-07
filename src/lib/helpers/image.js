@@ -41,9 +41,9 @@ export function base64ToBlob(base64Data, contentType = "image/jpeg") {
 
 
 export function getAssetUrl(relativePath = "") {
-  if (import.meta.env.DEV) {
-    return relativePath.startsWith("/") ? relativePath : `/${relativePath}`;
-  }
+  // if (import.meta.env.DEV) {
+  //   return relativePath.startsWith("/") ? relativePath : `/${relativePath}`;
+  // }
 
   // kalau production, pakai backend URL
   const base = import.meta.env.VITE_ADMIN_URL;
